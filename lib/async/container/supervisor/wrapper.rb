@@ -19,7 +19,7 @@ module Async
 				end
 				
 				def read
-					if line = @stream.gets
+					if line = @stream&.gets
 						JSON.parse(line, symbolize_names: true)
 					end
 				end

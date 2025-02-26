@@ -25,6 +25,7 @@ Gem::Specification.new do |spec|
 	spec.required_ruby_version = ">= 3.1"
 	
 	spec.add_dependency "async-container"
+	spec.add_dependency "async-service"
 	spec.add_dependency "io-stream"
 	spec.add_dependency "memory-leak", "~> 0.2"
 end

@@ -1,8 +1,8 @@
 # Async::Container::Supervisor
 
-Provides a supervisor service for 
+Provides a supervisor service for
 
-[![Development Status](https://github.com/socketry/async-container-supervisor-supervisor/workflows/Test/badge.svg)](https://github.com/socketry/async-container-supervisor-supervisor/actions?workflow=Test)
+[![Development Status](https://github.com/socketry/async-container-supervisor/workflows/Test/badge.svg)](https://github.com/socketry/async-container-supervisor/actions?workflow=Test)
 
 ## Features
 

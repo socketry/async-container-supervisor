@@ -8,19 +8,24 @@ module Async
 		module Supervisor
 			module Monitor
 				class PeriodicMonitor
-					def initialize(interval: 1)
+					def initialize(interval: 1, &block)
 						@interval = interval
+						@block = block
 					end
 					
-					def call
-						raise NotImplementedError
+					def register(wrapper, state)
+					end
+					
+					def remove(wrapper, state)
 					end
 					
 					def run
-						while true
-							self.call
-							
-							sleep(@interval)
+						Async do
+							while true
+								@block.call
+								
+								sleep(@interval)
+							end
 						end
 					end
 				end

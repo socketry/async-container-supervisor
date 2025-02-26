@@ -26,6 +26,7 @@ module Async
 				attr :registered
 				
 				def do_register(wrapper, state)
+					Console.info(self, "Registering process:", state)
 					@registered[wrapper] = state
 					
 					@monitors.each do |monitor|
@@ -42,13 +43,25 @@ module Async
 				end
 				
 				def run
-					@endpoint.accept do |peer|
-						stream = IO::Stream(peer)
-						wrapper = Wrapper.new(stream)
-						wrapper.run(self)
+					Async do |task|
+						Console.info(self, "Starting monitors...")
+						@monitors.each(&:run)
+						
+						Console.info(self, "Accepting connections...")
+						@endpoint.accept do |peer|
+							Console.info(self, "Accepted connection from peer:", peer: peer)
+							stream = IO::Stream(peer)
+							wrapper = Wrapper.new(stream)
+							wrapper.run(self)
+						ensure
+							wrapper.close
+							remove(wrapper)
+						end
+						
+						task.children&.each(&:wait)
 					ensure
-						wrapper.close
-						remove(wrapper)
+						Console.info(self, "Stopping...")
+						task.stop
 					end
 				end
 			end

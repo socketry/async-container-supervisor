@@ -21,7 +21,7 @@ describe Async::Container::Supervisor do
 	it "can connect to a server" do
 		instance = FakeInstance.new
 		client = Async::Container::Supervisor::Client.new(instance, endpoint)
-		wrapper = client.connect
+		connection = client.connect
 		
 		sleep(0.001) until server.registered.any?
 		

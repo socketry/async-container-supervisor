@@ -4,7 +4,7 @@
 # Copyright, 2025, by Samuel Williams.
 
 require "io/stream"
-require_relative "wrapper"
+require_relative "connection"
 
 module Async
 	module Container
@@ -19,47 +19,95 @@ module Async
 					@endpoint = endpoint
 				end
 				
+				def dispatch(call)
+					method_name = "do_#{call.message[:do]}"
+					self.public_send(method_name, call)
+				end
+				
 				def connect
-					unless @wrapper
+					unless @connection
 						peer = @endpoint.connect
 						stream = IO::Stream(peer)
-						@wrapper = Wrapper.new(stream)
+						@connection = Connection.new(stream, 0, instance: @instance)
 						
-						@wrapper.write(action: "register", instance: @instance)
+						# Register the instance with the server:
+						Async do
+							@connection.call(do: :register, state: @instance)
+						end
 					end
 					
-					return @wrapper unless block_given?
+					return @connection unless block_given?
 					
 					begin
-						yield @wrapper
+						yield @connection
 					ensure
-						@wrapper.close
+						@connection.close
 					end
 				end
 				
 				def close
-					if wrapper = @wrapper
-						@wrapper = nil
-						wrapper.close
+					if connection = @connection
+						@connection = nil
+						connection.close
 					end
 				end
 				
-				def do_memory_dump(wrapper, message)
-					Console.info(self, "Memory dump:", message)
-					path = message[:path]
+				private def dump(call)
+					if path = call[:path]
+						File.open(path, "w") do |file|
+							yield file
+						end
+						
+						call.finish(path: path)
+					else
+						buffer = StringIO.new
+						yield buffer
+						
+						call.finish(data: buffer.string)
+					end
+				end
+				
+				def do_scheduler_dump(call)
+					dump(call) do |file|
+						Fiber.scheduler.print_hierarchy(file)
+					end
+				end
+				
+				def do_memory_dump(call)
+					require "objspace"
 					
-					File.open(path, "w") do |file|
+					dump(call) do |file|
 						ObjectSpace.dump_all(output: file)
+					end
+				end
+				
+				def do_thread_dump(call)
+					dump(call) do |file|
+						Thread.list.each do |thread|
+							file.puts(thread.inspect)
+							file.puts(thread.backtrace)
+						end
+					end
+				end
+				
+				def do_garbage_profile_start(call)
+					GC::Profiler.enable
+					call.finish(started: true)
+				end
+				
+				def do_garbage_profile_stop(call)
+					GC::Profiler.disable
+					
+					dump(connection, message) do |file|
+						file.puts GC::Profiler.result
 					end
 				end
 				
 				def run
 					Async do |task|
 						loop do
-							Console.info(self, "Connecting to supervisor...")
-							connect do |wrapper|
-								Console.info(self, "Connected to supervisor.")
-								wrapper.run(self)
+							connect do |connection|
+								connection.run(self)
 							end
 						rescue => error
 							Console.error(self, "Unexpected error while running client!", exception: error)

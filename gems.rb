@@ -7,8 +7,6 @@ source "https://rubygems.org"
 
 gemspec
 
-gem "async-container", path: "../async-container"
-
 group :maintenance, optional: true do
 	gem "bake-gem"
 	gem "bake-modernize"

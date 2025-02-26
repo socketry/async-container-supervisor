@@ -4,6 +4,7 @@
 # Copyright, 2025, by Samuel Williams.
 
 require "async"
+require "async/service/generic"
 require "io/endpoint/bound_endpoint"
 
 module Async

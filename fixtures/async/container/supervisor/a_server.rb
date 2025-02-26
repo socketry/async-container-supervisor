@@ -12,6 +12,25 @@ require "tmpdir"
 module Async
 	module Container
 		module Supervisor
+			class RegistrationMonitor
+				def initialize
+					@registrations = []
+				end
+				
+				attr :registrations
+				
+				def run
+				end
+				
+				def register(connection)
+					@registrations << connection
+				end
+				
+				def remove(connection)
+					@registrations.delete(connection)
+				end
+			end
+			
 			AServer = Sus::Shared("a server") do
 				include Sus::Fixtures::Async::SchedulerContext
 				
@@ -25,7 +44,9 @@ module Async
 					end
 				end
 				
-				let(:server) {Async::Container::Supervisor::Server.new(@bound_endpoint)}
+				let(:registration_monitor) {RegistrationMonitor.new}
+				let(:monitors) {[registration_monitor]}
+				let(:server) {Async::Container::Supervisor::Server.new(@bound_endpoint, monitors: monitors)}
 				
 				before do
 					@bound_endpoint = endpoint.bound

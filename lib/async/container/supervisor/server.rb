@@ -69,7 +69,6 @@ module Async
 						
 						task.children&.each(&:wait)
 					ensure
-						Console.info(self, "Stopping...")
 						task.stop
 					end
 				end

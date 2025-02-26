@@ -23,12 +23,11 @@ describe Async::Container::Supervisor do
 		client = Async::Container::Supervisor::Client.new(instance, endpoint)
 		connection = client.connect
 		
-		sleep(0.001) until server.registered.any?
+		sleep(0.001) until registration_monitor.registrations.any?
 		
-		registration = server.registered.first
-		expect(registration.last).to have_keys(
-			action: be == "register",
-			instance: be == instance.as_json,
+		registration = registration_monitor.registrations.first
+		expect(registration.state).to have_keys(
+			process_id: be == ::Process.pid
 		)
 	end
 end

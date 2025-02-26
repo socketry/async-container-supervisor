@@ -16,11 +16,13 @@ Provides a supervisor service for
 
 Please see the [project documentation](https://socketry.github.io/async-container-supervisor/) for more details.
 
-  - [Getting Started](https://socketry.github.io/async-container-supervisor/guides/getting-started/index) - This guide explains how to use `async-container-supervisor` to build basic scalable systems.
-
 ## Releases
 
 Please see the [project releases](https://socketry.github.io/async-container-supervisor/releases/index) for all releases.
+
+### v0.1.0
+
+  - Initial implementation.
 
 ## Contributing
 

@@ -9,6 +9,9 @@ require_relative "dispatchable"
 module Async
 	module Container
 		module Supervisor
+			# A worker represents a long running process that can be controlled by the supervisor.
+			#
+			# There are various tasks that can be executed by the worker, such as dumping memory, threads, and garbage collection profiles.
 			class Worker < Client
 				def self.run(...)
 					self.new(...).run

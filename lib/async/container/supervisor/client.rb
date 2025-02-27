@@ -9,6 +9,7 @@ require_relative "dispatchable"
 module Async
 	module Container
 		module Supervisor
+			# A client provides a mechanism to connect to a supervisor server in order to execute operations.
 			class Client
 				def initialize(endpoint: Supervisor.endpoint)
 					@endpoint = endpoint

@@ -12,6 +12,9 @@ require "io/stream"
 module Async
 	module Container
 		module Supervisor
+			# The server represents the main supervisor process which is responsible for managing the lifecycle of other processes.
+			#
+			# There are various tasks that can be executed by the server, such as restarting the process group, and querying the status of the processes. The server is also responsible for managing the lifecycle of the monitors, which can be used to monitor the status of the connected workers.
 			class Server
 				def initialize(monitors: [], endpoint: Supervisor.endpoint)
 					@monitors = monitors

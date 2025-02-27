@@ -93,12 +93,34 @@ module Async
 						call = self.new(connection, id, message)
 						
 						connection.calls[id] = call
-						connection.write(id: id, **message)
-						
-						if block_given?
-							call.each(&block)
-						else
-							return call.pop
+						begin
+							connection.write(id: id, **message)
+							
+							if block_given?
+								call.each(&block)
+							else
+								intermediate = nil
+								
+								while response = call.pop
+									if response.delete(:finished)
+										if intermediate
+											if response.any?
+												intermediate << response
+											end
+											
+											return intermediate
+										else
+											return response
+										end
+									else
+										# Buffer intermediate responses:
+										intermediate ||= []
+										intermediate << response
+									end
+								end
+							end
+						ensure
+							connection.calls.delete(id)
 						end
 					end
 				end
@@ -156,7 +178,7 @@ module Async
 				
 				def run(target)
 					self.each do |message|
-						if id = message[:id]
+						if id = message.delete(:id)
 							if call = @calls[id]
 								# Response to a call:
 								call.push(**message)

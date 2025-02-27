@@ -43,9 +43,7 @@ module Async
 				end
 				
 				def status(call)
-					@processes.each do
-						call.push(memory_monitor: @cluster)
-					end
+					call.push(memory_monitor: @cluster)
 				end
 				
 				def run

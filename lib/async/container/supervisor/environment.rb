@@ -5,6 +5,8 @@
 
 require "async/service/environment"
 
+require_relative "service"
+
 module Async
 	module Container
 		module Supervisor

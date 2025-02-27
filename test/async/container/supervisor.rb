@@ -13,8 +13,8 @@ describe Async::Container::Supervisor do
 	end
 	
 	it "can connect to a server" do
-		client = Async::Container::Supervisor::Worker.new(state, endpoint: endpoint)
-		connection = client.connect
+		worker = Async::Container::Supervisor::Worker.new(state, endpoint: endpoint)
+		connection = worker.connect
 		
 		# Wait for the client to connect to the server:
 		sleep(0.001) until registration_monitor.registrations.any?
@@ -23,12 +23,14 @@ describe Async::Container::Supervisor do
 		expect(connection.state).to have_keys(
 			process_id: be == ::Process.pid
 		)
+	ensure
+		connection&.close
 	end
 	
-	with "do_memory_dump" do
+	with "do: :memory_dump" do
 		it "can dump memory" do
-			client = Async::Container::Supervisor::Worker.new(state, endpoint: endpoint)
-			client_task = client.run
+			worker = Async::Container::Supervisor::Worker.new(state, endpoint: endpoint)
+			worker_task = worker.run
 			
 			sleep(0.001) until registration_monitor.registrations.any?
 			
@@ -38,7 +40,7 @@ describe Async::Container::Supervisor do
 			
 			expect(File.size(path)).to be > 0
 		ensure
-			client_task&.stop
+			worker_task&.stop
 		end
 	end
 end

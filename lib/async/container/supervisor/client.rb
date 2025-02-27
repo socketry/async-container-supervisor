@@ -58,7 +58,7 @@ module Async
 							Console.error(self, "Connection failed:", exception: error)
 							sleep(rand)
 						ensure
-							connection.close
+							connection&.close
 						end
 					end
 				end

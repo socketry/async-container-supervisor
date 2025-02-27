@@ -12,7 +12,9 @@ class SleepService < Async::Service::Generic
 		
 		container.run(name: self.class.name, count: 4, restart: true, health_check_timeout: 2) do |instance|
 			Async do
-				Async::Container::Supervisor::Worker.new(instance, endpoint: @evaluator.supervisor_endpoint).run
+				if @environment.implements?(Async::Container::Supervisor::Supervised)
+					@evaluator.make_supervised_worker(instance).run
+				end
 				
 				start_time = Time.now
 				
@@ -37,7 +39,7 @@ end
 service "sleep" do
 	service_class SleepService
 	
-	supervisor_endpoint {Async::Container::Supervisor.endpoint}
+	include Async::Container::Supervisor::Supervised
 end
 
 service "supervisor" do

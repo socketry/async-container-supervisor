@@ -46,7 +46,7 @@ module Async
 				
 				let(:registration_monitor) {RegistrationMonitor.new}
 				let(:monitors) {[registration_monitor]}
-				let(:server) {Async::Container::Supervisor::Server.new(@bound_endpoint, monitors: monitors)}
+				let(:server) {Async::Container::Supervisor::Server.new(endpoint: @bound_endpoint, monitors: monitors)}
 				
 				before do
 					@bound_endpoint = endpoint.bound

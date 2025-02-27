@@ -5,6 +5,7 @@
 
 require_relative "connection"
 require_relative "endpoint"
+require_relative "dispatchable"
 
 require "io/stream"
 
@@ -12,17 +13,14 @@ module Async
 	module Container
 		module Supervisor
 			class Server
-				def initialize(endpoint = Supervisor.endpoint, monitors: [])
-					@endpoint = endpoint
+				def initialize(monitors: [], endpoint: Supervisor.endpoint)
 					@monitors = monitors
+					@endpoint = endpoint
 				end
 				
 				attr :monitors
 				
-				def dispatch(call)
-					method_name = "do_#{call.message[:do]}"
-					self.public_send(method_name, call)
-				end
+				include Dispatchable
 				
 				def do_register(call)
 					call.connection.state.merge!(call.message[:state])
@@ -38,6 +36,26 @@ module Async
 					call.finish
 				end
 				
+				# Restart the current process group, usually including the supervisor and any other processes.
+				#
+				# @parameter signal [Symbol] The signal to send to the process group.
+				def do_restart(call)
+					signal = call[:signal] || :INT
+					
+					# We are going to terminate the progress group, including *this* process, so finish the current RPC before that:
+					call.finish
+					
+					::Process.kill(signal, ::Process.ppid)
+				end
+				
+				def do_status(call)
+					@monitors.each do |monitor|
+						monitor.status(call)
+					end
+					
+					call.finish
+				end
+				
 				def remove(connection)
 					@monitors.each do |monitor|
 						begin
@@ -48,8 +66,8 @@ module Async
 					end
 				end
 				
-				def run
-					Async do |task|
+				def run(parent: Task.current)
+					parent.async do |task|
 						@monitors.each do |monitor|
 							begin
 								monitor.run
@@ -59,8 +77,7 @@ module Async
 						end
 						
 						@endpoint.accept do |peer|
-							stream = IO::Stream(peer)
-							connection = Connection.new(stream, 1, remote_address: peer.remote_address)
+							connection = Connection.new(peer, 1)
 							connection.run(self)
 						ensure
 							connection.close

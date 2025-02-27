@@ -18,6 +18,14 @@ module Async
 						@queue = ::Thread::Queue.new
 					end
 					
+					def as_json(...)
+						@message
+					end
+					
+					def to_json(...)
+						as_json.to_json(...)
+					end
+					
 					# @attribute [Connection] The connection that initiated the call.
 					attr :connection
 					
@@ -36,6 +44,11 @@ module Async
 						@queue.pop(...)
 					end
 					
+					# The call was never completed and the connection itself was closed.
+					def close
+						@queue.close
+					end
+					
 					def each(&block)
 						while response = self.pop
 							yield response
@@ -45,6 +58,10 @@ module Async
 					def finish(**response)
 						self.push(id: @id, finished: true, **response)
 						@queue.close
+					end
+					
+					def fail(**response)
+						self.finish(failed: true, **response)
 					end
 					
 					def closed?
@@ -86,13 +103,13 @@ module Async
 					end
 				end
 				
-				def initialize(stream, id, **state)
+				def initialize(stream, id = 0, **state)
 					@stream = stream
+					@id = id
 					@state = state
 					
+					@reader = nil
 					@calls = {}
-					
-					@id = id
 				end
 				
 				# @attribute [Hash(Integer, Call)] Calls in progress.
@@ -153,10 +170,29 @@ module Async
 					end
 				end
 				
+				def run_in_background(target, parent: Task.current)
+					@reader ||= parent.async do
+						self.run(target)
+					end
+				end
+				
 				def close
+					if @reader
+						@reader.stop
+						@reader = nil
+					end
+					
 					if stream = @stream
 						@stream = nil
 						stream.close
+					end
+					
+					if @calls
+						@calls.each do |id, call|
+							call.close
+						end
+						
+						@calls.clear
 					end
 				end
 			end

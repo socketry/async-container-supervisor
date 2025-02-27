@@ -43,7 +43,7 @@ module Async
 				end
 				
 				def make_server(endpoint)
-					Server.new(endpoint, monitors: self.monitors)
+					Server.new(endpoint: endpoint, monitors: self.monitors)
 				end
 			end
 		end

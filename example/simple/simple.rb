@@ -12,8 +12,7 @@ class SleepService < Async::Service::Generic
 		
 		container.run(name: self.class.name, count: 4, restart: true, health_check_timeout: 2) do |instance|
 			Async do
-				client = Async::Container::Supervisor::Client.new(instance, @evaluator.supervisor_endpoint)
-				client.run
+				Async::Container::Supervisor::Worker.new(instance, endpoint: @evaluator.supervisor_endpoint).run
 				
 				start_time = Time.now
 				
@@ -45,6 +44,6 @@ service "supervisor" do
 	include Async::Container::Supervisor::Environment
 	
 	monitors do
-		[Async::Container::Supervisor::MemoryMonitor.new(interval: 1, limit: 1024 * 1024 * 100)]
+		[Async::Container::Supervisor::MemoryMonitor.new(interval: 1, limit: 1024 * 1024 * 400)]
 	end
 end

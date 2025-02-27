@@ -10,7 +10,7 @@ module Async
 	module Container
 		module Supervisor
 			class MemoryMonitor
-				def initialize(interval: 10, limit: nil)
+				def initialize(interval: 10, limit: nil, &block)
 					@interval = interval
 					@cluster = Memory::Leak::Cluster.new(limit: limit)
 					@processes = Hash.new{|hash, key| hash[key] = Set.new.compare_by_identity}
@@ -42,6 +42,12 @@ module Async
 					end
 				end
 				
+				def status(call)
+					@processes.each do
+						call.push(memory_monitor: @cluster)
+					end
+				end
+				
 				def run
 					Async do
 						while true
@@ -54,6 +60,7 @@ module Async
 									
 									response = connection.call(do: :memory_dump, path: path, timeout: 30)
 									Console.info(self, "Memory dump saved to:", path, response: response)
+									@block.call(response) if @block
 								end
 								
 								# Kill the process:

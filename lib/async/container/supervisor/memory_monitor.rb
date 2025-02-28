@@ -31,13 +31,6 @@ module Async
 					@cluster.add(process_id, **@options)
 				end
 				
-				# Remove a process from the memory monitor.
-				#
-				# @parameter process_id [Integer] The process ID to remove.
-				def remove(process_id)
-					@cluster.remove(process_id)
-				end
-				
 				# Register the connection (worker) with the memory monitor.
 				def register(connection)
 					Console.info(self, "Registering connection:", connection: connection, state: connection.state)
@@ -62,7 +55,7 @@ module Async
 						
 						if connections.empty?
 							Console.info(self, "Removing process:", process_id: process_id)
-							self.remove(process_id)
+							@cluster.remove(process_id)
 						end
 					end
 				end

@@ -14,6 +14,7 @@ module Async
 				#
 				# @parameter interval [Integer] The interval at which to check for memory leaks.
 				# @parameter total_size_limit [Integer] The total size limit of all processes, or nil for no limit.
+				# @parameter options [Hash] Options to pass to the cluster when adding processes.
 				def initialize(interval: 10, total_size_limit: nil, **options)
 					@interval = interval
 					@cluster = Memory::Leak::Cluster.new(total_size_limit: total_size_limit)

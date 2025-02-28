@@ -56,8 +56,11 @@ module Async
 					end
 					
 					def finish(**response)
-						self.push(id: @id, finished: true, **response)
-						@queue.close
+						# If the remote end has already closed the connection, we don't need to send a finished message:
+						unless @queue.closed?
+							self.push(id: @id, finished: true, **response)
+							@queue.close
+						end
 					end
 					
 					def fail(**response)

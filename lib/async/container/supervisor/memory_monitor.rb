@@ -13,10 +13,14 @@ module Async
 				# Create a new memory monitor.
 				#
 				# @parameter interval [Integer] The interval at which to check for memory leaks.
-				# @parameter limit [Integer] The limit of memory that a process can consume before being killed.
-				def initialize(interval: 10)
+				# @parameter total_size_limit [Integer] The total size limit of all processes, or nil for no limit.
+				def initialize(interval: 10, total_size_limit: nil, **options)
 					@interval = interval
-					@cluster = Memory::Leak::Cluster.new(limit: limit)
+					@cluster = Memory::Leak::Cluster.new(total_size_limit: total_size_limit)
+					
+					# We use these options when adding processes to the cluster:
+					@options = options
+					
 					@processes = Hash.new{|hash, key| hash[key] = Set.new.compare_by_identity}
 				end
 				
@@ -24,7 +28,7 @@ module Async
 				#
 				# @parameter process_id [Integer] The process ID to add.
 				def add(process_id)
-					@cluster.add(process_id)
+					@cluster.add(process_id, **@options)
 				end
 				
 				# Remove a process from the memory monitor.

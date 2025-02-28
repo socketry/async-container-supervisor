@@ -27,5 +27,5 @@ Gem::Specification.new do |spec|
 	spec.add_dependency "async-container", "~> 0.22"
 	spec.add_dependency "async-service"
 	spec.add_dependency "io-endpoint"
-	spec.add_dependency "memory-leak", "~> 0.3"
+	spec.add_dependency "memory-leak", "~> 0.5"
 end

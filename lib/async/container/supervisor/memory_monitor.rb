@@ -33,12 +33,12 @@ module Async
 				
 				# Register the connection (worker) with the memory monitor.
 				def register(connection)
-					Console.info(self, "Registering connection:", connection: connection, state: connection.state)
+					Console.debug(self, "Registering connection:", connection: connection, state: connection.state)
 					if process_id = connection.state[:process_id]
 						connections = @processes[process_id]
 						
 						if connections.empty?
-							Console.info(self, "Registering process:", process_id: process_id)
+							Console.debug(self, "Registering process:", process_id: process_id)
 							self.add(process_id)
 						end
 						
@@ -54,7 +54,7 @@ module Async
 						connections.delete(connection)
 						
 						if connections.empty?
-							Console.info(self, "Removing process:", process_id: process_id)
+							Console.debug(self, "Removing process:", process_id: process_id)
 							@cluster.remove(process_id)
 						end
 					end

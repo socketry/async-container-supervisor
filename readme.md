@@ -20,6 +20,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container-supervisor/releases/index) for all releases.
 
+### v0.6.0
+
+  - Add `async:container:supervisor:reload` command to restart the container (blue/green deployment).
+
 ### v0.1.0
 
   - Initial implementation.

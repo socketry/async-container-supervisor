@@ -9,9 +9,17 @@ def initialize(...)
 	require "async/container/supervisor"
 end
 
+# Restart the container, typically causing it to exit (the parent process should then restart it).
 def restart
 	client do |connection|
 		connection.call(do: :restart)
+	end
+end
+
+# Reload the services gracefully, allowing them to reconfigure without dropping connections.
+def reload
+	client do |connection|
+		connection.call(do: :restart, signal: :HUP)
 	end
 end
 

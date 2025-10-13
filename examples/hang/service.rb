@@ -10,7 +10,7 @@ class SleepService < Async::Service::Generic
 	def setup(container)
 		super
 		
-		container.run(name: self.class.name, count: 4, restart: true, health_check_timeout: 2) do |instance|
+		container.run(name: self.class.name, count: 1, restart: true, health_check_timeout: 2) do |instance|
 			Async do
 				if @environment.implements?(Async::Container::Supervisor::Supervised)
 					@evaluator.make_supervised_worker(instance).run
@@ -20,15 +20,7 @@ class SleepService < Async::Service::Generic
 				
 				instance.ready!
 				
-				chunks = []
-				while true
-					chunks << " " * 1024 * 1024 * rand(10) 
-					sleep 1
-					instance.ready!
-					
-					uptime = Time.now - start_time
-					instance.name = "Sleeping for #{uptime.to_i} seconds..."
-				end
+				sleep # forever
 			ensure
 				Console.info(self, "Exiting...")
 			end
@@ -44,8 +36,4 @@ end
 
 service "supervisor" do
 	include Async::Container::Supervisor::Environment
-	
-	monitors do
-		[Async::Container::Supervisor::MemoryMonitor.new(interval: 1, limit: 1024 * 1024 * 400)]
-	end
 end

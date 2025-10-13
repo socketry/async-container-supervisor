@@ -20,13 +20,11 @@ Gem::Specification.new do |spec|
 		"source_code_uri" => "https://github.com/socketry/async-container-supervisor.git",
 	}
 	
-	spec.files = Dir.glob(["{bake,lib}/**/*", "*.md"], File::FNM_DOTMATCH, base: __dir__)
+	spec.files = Dir.glob(["{bake,context,lib}/**/*", "*.md"], File::FNM_DOTMATCH, base: __dir__)
 	
 	spec.required_ruby_version = ">= 3.2"
 	
-	spec.add_dependency "async-container", "~> 0.22"
 	spec.add_dependency "async-service"
 	spec.add_dependency "io-endpoint"
-	spec.add_dependency "io-stream"
 	spec.add_dependency "memory-leak", "~> 0.5"
 end

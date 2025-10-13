@@ -7,8 +7,6 @@ require_relative "connection"
 require_relative "endpoint"
 require_relative "dispatchable"
 
-require "io/stream"
-
 module Async
 	module Container
 		module Supervisor

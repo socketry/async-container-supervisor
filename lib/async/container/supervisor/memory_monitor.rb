@@ -34,12 +34,12 @@ module Async
 				
 				# Register the connection (worker) with the memory monitor.
 				def register(connection)
-					Console.debug(self, "Registering connection:", connection: connection, state: connection.state)
+					Console.debug(self, "Registering connection.", connection: connection, state: connection.state)
 					if process_id = connection.state[:process_id]
 						connections = @processes[process_id]
 						
 						if connections.empty?
-							Console.debug(self, "Registering process:", process_id: process_id)
+							Console.debug(self, "Registering process.", child: {process_id: process_id})
 							self.add(process_id)
 						end
 						
@@ -55,7 +55,7 @@ module Async
 						connections.delete(connection)
 						
 						if connections.empty?
-							Console.debug(self, "Removing process:", process_id: process_id)
+							Console.debug(self, "Removing process.", child: {process_id: process_id})
 							@cluster.remove(process_id)
 						end
 					end
@@ -74,7 +74,7 @@ module Async
 				# @parameter monitor [Memory::Leak::Monitor] The monitor that detected the memory leak.
 				# @returns [Boolean] True if the process was killed.
 				def memory_leak_detected(process_id, monitor)
-					Console.info(self, "Killing process:", process_id: process_id)
+					Console.info(self, "Killing process!", child: {process_id: process_id})
 					Process.kill(:INT, process_id)
 					
 					true
@@ -88,7 +88,7 @@ module Async
 						while true
 							# This block must return true if the process was killed.
 							@cluster.check! do |process_id, monitor|
-								Console.error(self, "Memory leak detected in process:", process_id: process_id, monitor: monitor)
+								Console.error(self, "Memory leak detected!", child: {process_id: process_id}, monitor: monitor)
 								memory_leak_detected(process_id, monitor)
 							end
 							

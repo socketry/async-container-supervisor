@@ -46,12 +46,18 @@ module Async
 					# We are going to terminate the progress group, including *this* process, so finish the current RPC before that:
 					call.finish
 					
-					::Process.kill(signal, ::Process.ppid)
+					begin
+						::Process.kill(signal, ::Process.ppid)
+					rescue => error
+						Console.error(self, "Error while sending #{signal} to process!", signal: signal, exception: error)
+					end
 				end
 				
 				def do_status(call)
 					@monitors.each do |monitor|
 						monitor.status(call)
+					rescue => error
+						Console.error(self, "Error while getting status!", monitor: monitor, exception: error)
 					end
 					
 					call.finish
@@ -80,6 +86,8 @@ module Async
 						@endpoint.accept do |peer|
 							connection = Connection.new(peer, 1)
 							connection.run(self)
+						rescue => error
+							Console.error(self, "Error while accepting connection!", exception: error)
 						ensure
 							connection.close
 							remove(connection)

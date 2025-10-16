@@ -11,6 +11,7 @@ module Async
 		module Supervisor
 			module Dispatchable
 				def dispatch(call)
+					return unless call.message[:do]
 					method_name = "do_#{call.message[:do]}"
 					self.public_send(method_name, call)
 				rescue => error

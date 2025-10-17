@@ -37,10 +37,10 @@ module Async
 				let(:ipc_path) {File.join(@root, "supervisor.ipc")}
 				let(:endpoint) {Async::Container::Supervisor.endpoint(ipc_path)}
 				
-				def around(&block)
+				def around
 					Dir.mktmpdir do |directory|
 						@root = directory
-						super(&block)
+						super
 					end
 				end
 				

@@ -27,11 +27,9 @@ module Async
 					call.connection.state.merge!(call.message[:state])
 					
 					@monitors.each do |monitor|
-						begin
-							monitor.register(call.connection)
-						rescue => error
-							Console.error(self, "Error while registering process!", monitor: monitor, exception: error)
-						end
+						monitor.register(call.connection)
+					rescue => error
+						Console.error(self, "Error while registering process!", monitor: monitor, exception: error)
 					end
 				ensure
 					call.finish
@@ -59,22 +57,18 @@ module Async
 				
 				def remove(connection)
 					@monitors.each do |monitor|
-						begin
-							monitor.remove(connection)
-						rescue => error
-							Console.error(self, "Error while removing process!", monitor: monitor, exception: error)
-						end
+						monitor.remove(connection)
+					rescue => error
+						Console.error(self, "Error while removing process!", monitor: monitor, exception: error)
 					end
 				end
 				
 				def run(parent: Task.current)
 					parent.async do |task|
 						@monitors.each do |monitor|
-							begin
-								monitor.run
-							rescue => error
-								Console.error(self, "Error while starting monitor!", monitor: monitor, exception: error)
-							end
+							monitor.run
+						rescue => error
+							Console.error(self, "Error while starting monitor!", monitor: monitor, exception: error)
 						end
 						
 						@endpoint.accept do |peer|

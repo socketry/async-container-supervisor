@@ -4,11 +4,11 @@
 # Copyright, 2025, by Samuel Williams.
 
 require "async/container/supervisor/a_server"
-require "sus/fixtures/console/null_logger"
+require "sus/fixtures/console/captured_logger"
 
 describe Async::Container::Supervisor::Server do
-	include Sus::Fixtures::Console::NullLogger
 	include Async::Container::Supervisor::AServer
+	include Sus::Fixtures::Console::CapturedLogger
 	
 	it "can handle unexpected failures" do
 		# First, send invalid JSON to trigger the error:
@@ -36,6 +36,10 @@ describe Async::Container::Supervisor::Server do
 		)
 		
 		stream.close
+		
+		# Verify error was logged about the parsing failure
+		error_logs = console_capture.select {|log| log[:severity] == :warn}
+		expect(error_logs).not.to be(:empty?)
 	end
 	
 	with "failing monitor" do
@@ -45,9 +49,11 @@ describe Async::Container::Supervisor::Server do
 				end
 				
 				def register(connection)
+					raise "Monitor failed to register!"
 				end
 				
 				def remove(connection)
+					raise "Monitor failed to remove!"
 				end
 				
 				def status(call)
@@ -57,6 +63,30 @@ describe Async::Container::Supervisor::Server do
 		end
 		
 		let(:monitors) {[failing_monitor]}
+		
+		it "can handle monitor registration failures" do
+			# Send a register message:
+			stream = endpoint.connect
+			
+			message = {id: 1, do: :register, state: {process_id: ::Process.pid}}
+			stream.puts(JSON.dump(message))
+			stream.flush
+			
+			# Read the response:
+			response = JSON.parse(stream.gets, symbolize_names: true)
+			
+			# The server should still finish despite the monitor error:
+			expect(response).to have_keys(
+				id: be == 1,
+				finished: be == true
+			)
+			
+			# Verify error was logged about the monitor failure:
+			error_log = console_capture.find {|log| log[:severity] == :error && log[:message] =~ /Error while registering process/}
+			expect(error_log).to be_truthy
+			
+			stream.close
+		end
 		
 		it "can handle monitor status failures" do
 			# Send a status request:
@@ -71,14 +101,41 @@ describe Async::Container::Supervisor::Server do
 			
 			# The server should still respond with a finished message despite the monitor error:
 			expect(response).to have_keys(
-					id: be == 1,
-					finished: be == true,
-					error: have_keys(
-						class: be == "RuntimeError",
-						message: be == "Monitor failed to get status!",
-						backtrace: be_a(Array)
-					)
+				id: be == 1,
+				finished: be == true,
+				error: have_keys(
+					class: be == "RuntimeError",
+					message: be == "Monitor failed to get status!",
+					backtrace: be_a(Array)
 				)
+			)
+			
+			stream.close
+		end
+		
+		it "can handle monitor removal failures" do
+			# Connect then disconnect to trigger removal:
+			stream = endpoint.connect
+			stream.close
+			
+			# Give time for removal to process
+			reactor.sleep(0.01)
+			
+			# Verify error was logged about the monitor removal failure:
+			error_log = console_capture.find {|log| log[:severity] == :error && log[:message] =~ /Error while removing process/}
+			expect(error_log).to be_truthy
+			
+			# Verify server is still working by sending a new request:
+			stream = endpoint.connect
+			message = {id: 1, do: :status}
+			stream.puts(JSON.dump(message))
+			stream.flush
+			
+			response = JSON.parse(stream.gets, symbolize_names: true)
+			expect(response).to have_keys(
+				id: be == 1,
+				finished: be == true
+			)
 			
 			stream.close
 		end
@@ -97,6 +154,13 @@ describe Async::Container::Supervisor::Server do
 		message = {id: 1, finished: true}
 		stream.puts(JSON.dump(message))
 		stream.flush
+		
+		# Wait for the message to be processed
+		reactor.sleep(0.01)
+		
+		# Verify a debug warning was logged about ignoring the message:
+		debug_log = console_capture.find {|log| log[:severity] == :debug && log[:message] =~ /Ignoring message/}
+		expect(debug_log).to be_truthy
 		
 		# Send a valid message to confirm the server is still working:
 		valid_message = {id: 3, do: :register, state: {process_id: ::Process.pid}}

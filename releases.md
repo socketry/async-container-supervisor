@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.6.3
 
   - Add agent context documentation.
 

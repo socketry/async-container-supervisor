@@ -16,6 +16,8 @@ Provides a supervisor service for
 
 Please see the [project documentation](https://socketry.github.io/async-container-supervisor/) for more details.
 
+  - [Getting Started](https://socketry.github.io/async-container-supervisor/guides/getting-started/index) - This guide explains how to get started with `async-container-supervisor` to supervise and monitor worker processes in your Ruby applications.
+
 ## Releases
 
 Please see the [project releases](https://socketry.github.io/async-container-supervisor/releases/index) for all releases.

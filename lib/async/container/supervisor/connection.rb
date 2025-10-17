@@ -185,9 +185,12 @@ module Async
 							if call = @calls[id]
 								# Response to a call:
 								call.push(**message)
-							else
+							elsif message.key?(:do)
 								# Incoming call:
 								Call.dispatch(self, target, id, message)
+							else
+								# Likely a response to a timed-out call, ignore it:
+								Console.debug(self, "Ignoring message:", message)
 							end
 						else
 							Console.error(self, "Unknown message:", message)

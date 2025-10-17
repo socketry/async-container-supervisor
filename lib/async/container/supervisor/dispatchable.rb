@@ -14,7 +14,7 @@ module Async
 					method_name = "do_#{call.message[:do]}"
 					self.public_send(method_name, call)
 				rescue => error
-					Console.error(self, "Error while dispatching call.", exception: error, call: call)
+					Console.error(self, "Error while dispatching call!", exception: error, call: call)
 					
 					call.fail(error: {
 						class: error.class,

@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Make client task (in supervised worker) transient, so that it doesn't keep the reactor alive unnecessarily. It also won't be stopped by default when SIGINT is received, so that the worker will remain connected to the supervisor until the worker is completely terminated.
+
 ## v0.6.3
 
   - Add agent context documentation.

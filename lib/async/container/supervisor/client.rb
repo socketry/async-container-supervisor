@@ -45,7 +45,7 @@ module Async
 				
 				# Run the client in a loop, reconnecting if necessary.
 				def run
-					Async do
+					Async(annotation: "Supervisor Client", transient: true) do
 						loop do
 							connection = connect!
 							

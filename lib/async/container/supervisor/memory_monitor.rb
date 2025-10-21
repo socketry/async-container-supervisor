@@ -82,7 +82,7 @@ module Async
 					
 					if @memory_sample
 						Console.info(self, "Capturing memory sample...", child: {process_id: process_id}, memory_sample: @memory_sample)
-
+						
 						# We are tracking multiple connections to the same process:
 						connections = @processes[process_id]
 						

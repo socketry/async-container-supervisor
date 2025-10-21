@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.7.0
 
   - If a memory leak is detected, sample memory usage for 60 seconds before exiting.
 

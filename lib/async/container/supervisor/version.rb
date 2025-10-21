@@ -6,7 +6,7 @@
 module Async
 	module Container
 		module Supervisor
-			VERSION = "0.6.4"
+			VERSION = "0.7.0"
 		end
 	end
 end

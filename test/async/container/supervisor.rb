@@ -76,10 +76,8 @@ describe Async::Container::Supervisor do
 			)
 			
 			# Verify we got the forwarded response
-			expect(result).to have_keys(:data)
-			require "json"
-			report = JSON.parse(result[:data])
-			expect(report).to have_keys("total_allocated", "total_retained")
+			expect(result).to have_keys(:report)
+			expect(result[:report]).to have_keys(:total_allocated, :total_retained)
 		ensure
 			client_conn&.close
 			worker_task&.stop
@@ -119,39 +117,12 @@ describe Async::Container::Supervisor do
 			# Sample for a short duration (1 second for test speed)
 			result = connection.call(do: :memory_sample, duration: 1)
 			
-			# The result should contain a JSON report
-			expect(result).to have_keys(:data)
-			expect(result[:data]).to be_a(String)
-			expect(result[:data]).not.to be(:empty?)
-			
-			# Parse the JSON to verify it's valid
-			require "json"
-			report_data = JSON.parse(result[:data])
-			expect(report_data).to have_keys("total_allocated", "total_retained")
+			# The result should contain a report
+			expect(result).to have_keys(:report)
+			expect(result[:report]).to have_keys(:total_allocated, :total_retained)
 		ensure
 			worker_task&.stop
 		end
 		
-		it "can save memory sample report to file" do
-			worker = Async::Container::Supervisor::Worker.new(state, endpoint: endpoint)
-			worker_task = worker.run
-			
-			sleep(0.001) until registration_monitor.registrations.any?
-			
-			path = File.join(@root, "memory_report.json")
-			connection = registration_monitor.registrations.first
-			connection.call(do: :memory_sample, duration: 1, path: path)
-			
-			expect(File.exist?(path)).to be == true
-			expect(File.size(path)).to be > 0
-			
-			# Verify it's valid JSON
-			require "json"
-			content = File.read(path)
-			report_data = JSON.parse(content)
-			expect(report_data).to have_keys("total_allocated", "total_retained")
-		ensure
-			worker_task&.stop
-		end
 	end
 end

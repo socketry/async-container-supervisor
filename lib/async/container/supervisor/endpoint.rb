@@ -8,6 +8,10 @@ require "io/endpoint/unix_endpoint"
 module Async
 	module Container
 		module Supervisor
+			# Get the supervisor IPC endpoint.
+			#
+			# @parameter path [String] The path for the Unix socket (default: "supervisor.ipc").
+			# @returns [IO::Endpoint] The Unix socket endpoint.
 			def self.endpoint(path = "supervisor.ipc")
 				::IO::Endpoint.unix(path)
 			end

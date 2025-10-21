@@ -16,6 +16,10 @@ module Async
 			#
 			# There are various tasks that can be executed by the server, such as restarting the process group, and querying the status of the processes. The server is also responsible for managing the lifecycle of the monitors, which can be used to monitor the status of the connected workers.
 			class Server
+				# Initialize a new supervisor server.
+				#
+				# @parameter monitors [Array] The monitors to run.
+				# @parameter endpoint [IO::Endpoint] The endpoint to listen on.
 				def initialize(monitors: [], endpoint: Supervisor.endpoint)
 					@monitors = monitors
 					@endpoint = endpoint
@@ -28,6 +32,12 @@ module Async
 				
 				include Dispatchable
 				
+				# Register a worker connection with the supervisor.
+				#
+				# Assigns a unique connection ID and notifies all monitors of the new connection.
+				#
+				# @parameter call [Connection::Call] The registration call.
+				# @parameter call[:state] [Hash] The worker state to merge (e.g. process_id).
 				def do_register(call)
 					call.connection.state.merge!(call.message[:state])
 					
@@ -47,9 +57,13 @@ module Async
 				
 				# Forward an operation to a worker connection.
 				#
+				# This allows clients to invoke operations on specific worker processes by
+				# providing a connection_id. The operation is proxied through to the worker
+				# and responses are streamed back to the client.
+				#
 				# @parameter call [Connection::Call] The call to handle.
-				# @parameter operation [Hash] The operation to forward, must include :do key.
-				# @parameter connection_id [String] The connection ID to target.
+				# @parameter call[:operation] [Hash] The operation to forward, must include :do key.
+				# @parameter call[:connection_id] [String] The connection ID to target.
 				def do_forward(call)
 					operation = call[:operation]
 					connection_id = call[:connection_id]
@@ -82,6 +96,12 @@ module Async
 					::Process.kill(signal, ::Process.ppid)
 				end
 				
+				# Query the status of the supervisor and all connected workers.
+				#
+				# Returns information about all registered connections and delegates to
+				# monitors to provide additional status information.
+				#
+				# @parameter call [Connection::Call] The status call.
 				def do_status(call)
 					connections = @connections.map do |connection_id, connection|
 						{
@@ -98,6 +118,11 @@ module Async
 					call.finish(connections: connections)
 				end
 				
+				# Remove a worker connection from the supervisor.
+				#
+				# Notifies all monitors and removes the connection from tracking.
+				#
+				# @parameter connection [Connection] The connection to remove.
 				def remove(connection)
 					if connection_id = connection.state[:connection_id]
 						@connections.delete(connection_id)
@@ -110,6 +135,11 @@ module Async
 					end
 				end
 				
+				# Run the supervisor server.
+				#
+				# Starts all monitors and accepts connections from workers.
+				#
+				# @parameter parent [Async::Task] The parent task to run under.
 				def run(parent: Task.current)
 					parent.async do |task|
 						@monitors.each do |monitor|

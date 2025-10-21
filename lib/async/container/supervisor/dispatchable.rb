@@ -9,7 +9,15 @@ require_relative "endpoint"
 module Async
 	module Container
 		module Supervisor
+			# A mixin for objects that can dispatch calls.
+			#
+			# Provides automatic method dispatch based on the call's `:do` parameter.
 			module Dispatchable
+				# Dispatch a call to the appropriate method.
+				#
+				# Routes calls to methods named `do_#{operation}` based on the call's `:do` parameter.
+				#
+				# @parameter call [Connection::Call] The call to dispatch.
 				def dispatch(call)
 					method_name = "do_#{call.message[:do]}"
 					self.public_send(method_name, call)

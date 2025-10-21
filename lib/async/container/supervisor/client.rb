@@ -11,6 +11,9 @@ module Async
 		module Supervisor
 			# A client provides a mechanism to connect to a supervisor server in order to execute operations.
 			class Client
+				# Initialize a new client.
+				#
+				# @parameter endpoint [IO::Endpoint] The supervisor endpoint to connect to.
 				def initialize(endpoint: Supervisor.endpoint)
 					@endpoint = endpoint
 				end

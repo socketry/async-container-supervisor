@@ -9,6 +9,9 @@ require "set"
 module Async
 	module Container
 		module Supervisor
+			# Monitors worker memory usage and restarts workers that exceed limits.
+			#
+			# Uses the `memory` gem to track process memory and detect leaks.
 			class MemoryMonitor
 				MEMORY_SAMPLE = {duration: 60, timeout: 60+20}
 				

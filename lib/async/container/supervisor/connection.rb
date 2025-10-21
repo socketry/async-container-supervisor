@@ -8,8 +8,19 @@ require "json"
 module Async
 	module Container
 		module Supervisor
+			# Represents a bidirectional communication channel between supervisor and worker.
+			#
+			# Handles message passing, call/response patterns, and connection lifecycle.
 			class Connection
+				# Represents a remote procedure call over a connection.
+				#
+				# Manages the call lifecycle, response queueing, and completion signaling.
 				class Call
+					# Initialize a new call.
+					#
+					# @parameter connection [Connection] The connection this call belongs to.
+					# @parameter id [Integer] The unique call identifier.
+					# @parameter message [Hash] The call message/parameters.
 					def initialize(connection, id, message)
 						@connection = connection
 						@id = id
@@ -18,10 +29,16 @@ module Async
 						@queue = ::Thread::Queue.new
 					end
 					
+					# Convert the call to a JSON-compatible hash.
+					#
+					# @returns [Hash] The message hash.
 					def as_json(...)
 						@message
 					end
 					
+					# Convert the call to a JSON string.
+					#
+					# @returns [String] The JSON representation.
 					def to_json(...)
 						as_json.to_json(...)
 					end
@@ -32,14 +49,24 @@ module Async
 					# @attribute [Hash] The message that initiated the call.
 					attr :message
 					
+					# Access a parameter from the call message.
+					#
+					# @parameter key [Symbol] The parameter name.
+					# @returns [Object] The parameter value.
 					def [] key
 						@message[key]
 					end
 					
+					# Push a response into the call's queue.
+					#
+					# @parameter response [Hash] The response data to push.
 					def push(**response)
 						@queue.push(response)
 					end
 					
+					# Pop a response from the call's queue.
+					#
+					# @returns [Hash, nil] The next response or nil if queue is closed.
 					def pop(...)
 						@queue.pop(...)
 					end
@@ -49,12 +76,20 @@ module Async
 						@queue.close
 					end
 					
+					# Iterate over all responses from the call.
+					#
+					# @yields {|response| ...} Each response from the queue.
 					def each(&block)
 						while response = self.pop
 							yield response
 						end
 					end
 					
+					# Finish the call with a final response.
+					#
+					# Closes the response queue after pushing the final response.
+					#
+					# @parameter response [Hash] The final response data.
 					def finish(**response)
 						# If the remote end has already closed the connection, we don't need to send a finished message:
 						unless @queue.closed?
@@ -63,10 +98,16 @@ module Async
 						end
 					end
 					
+					# Finish the call with a failure response.
+					#
+					# @parameter response [Hash] The error response data.
 					def fail(**response)
 						self.finish(failed: true, **response)
 					end
 					
+					# Check if the call's queue is closed.
+					#
+					# @returns [Boolean] True if the queue is closed.
 					def closed?
 						@queue.closed?
 					end
@@ -74,7 +115,8 @@ module Async
 					# Forward this call to another connection, proxying all responses back.
 					#
 					# This provides true streaming forwarding - intermediate responses flow through
-					# in real-time rather than being buffered.
+					# in real-time rather than being buffered. The forwarding runs asynchronously
+					# to avoid blocking the dispatcher.
 					#
 					# @parameter target_connection [Connection] The connection to forward the call to.
 					# @parameter operation [Hash] The operation request to forward (must include :do key).
@@ -92,6 +134,15 @@ module Async
 						end
 					end
 					
+					# Dispatch a call to a target handler.
+					#
+					# Creates a call, dispatches it to the target, and streams responses back
+					# through the connection.
+					#
+					# @parameter connection [Connection] The connection to dispatch on.
+					# @parameter target [Dispatchable] The target handler.
+					# @parameter id [Integer] The call identifier.
+					# @parameter message [Hash] The call message.
 					def self.dispatch(connection, target, id, message)
 						Async do
 							call = self.new(connection, id, message)
@@ -112,6 +163,15 @@ module Async
 						end
 					end
 					
+					# Make a call on a connection and wait for responses.
+					#
+					# If a block is provided, yields each response. Otherwise, buffers intermediate
+					# responses and returns the final response.
+					#
+					# @parameter connection [Connection] The connection to call on.
+					# @parameter message [Hash] The call message/parameters.
+					# @yields {|response| ...} Each intermediate response if block given.
+					# @returns [Hash, Array] The final response or array of intermediate responses.
 					def self.call(connection, **message, &block)
 						id = connection.next_id
 						call = self.new(connection, id, message)
@@ -149,6 +209,11 @@ module Async
 					end
 				end
 				
+				# Initialize a new connection.
+				#
+				# @parameter stream [IO] The underlying IO stream.
+				# @parameter id [Integer] The starting call ID (default: 0).
+				# @parameter state [Hash] Initial connection state.
 				def initialize(stream, id = 0, **state)
 					@stream = stream
 					@id = id
@@ -164,15 +229,26 @@ module Async
 				# @attribute [Hash(Symbol, Object)] State associated with this connection, for example the process ID, etc.
 				attr_accessor :state
 				
+				# Generate the next unique call ID.
+				#
+				# @returns [Integer] The next call identifier.
 				def next_id
 					@id += 2
 				end
 				
+				# Write a message to the connection stream.
+				#
+				# @parameter message [Hash] The message to write.
 				def write(**message)
 					@stream.write(JSON.dump(message) << "\n")
 					@stream.flush
 				end
 				
+				# Make a synchronous call and wait for a single response.
+				#
+				# @parameter timeout [Numeric, nil] Optional timeout for the call.
+				# @parameter message [Hash] The call message.
+				# @returns [Hash] The response.
 				def call(timeout: nil, **message)
 					id = next_id
 					calls[id] = ::Thread::Queue.new
@@ -184,22 +260,34 @@ module Async
 					calls.delete(id)
 				end
 				
+				# Read a message from the connection stream.
+				#
+				# @returns [Hash, nil] The parsed message or nil if stream is closed.
 				def read
 					if line = @stream&.gets
 						JSON.parse(line, symbolize_names: true)
 					end
 				end
 				
+				# Iterate over all messages from the connection.
+				#
+				# @yields {|message| ...} Each message read from the stream.
 				def each
 					while message = self.read
 						yield message
 					end
 				end
 				
+				# Make a synchronous call and wait for a single response.
 				def call(...)
 					Call.call(self, ...)
 				end
 				
+				# Run the connection, processing incoming messages.
+				#
+				# Dispatches incoming calls to the target and routes responses to waiting calls.
+				#
+				# @parameter target [Dispatchable] The target to dispatch calls to.
 				def run(target)
 					self.each do |message|
 						if id = message.delete(:id)
@@ -219,12 +307,20 @@ module Async
 					end
 				end
 				
+				# Run the connection in a background task.
+				#
+				# @parameter target [Dispatchable] The target to dispatch calls to.
+				# @parameter parent [Async::Task] The parent task.
+				# @returns [Async::Task] The background reader task.
 				def run_in_background(target, parent: Task.current)
 					@reader ||= parent.async do
 						self.run(target)
 					end
 				end
 				
+				# Close the connection and clean up resources.
+				#
+				# Stops the background reader, closes the stream, and closes all pending calls.
 				def close
 					if @reader
 						@reader.stop

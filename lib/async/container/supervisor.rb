@@ -13,13 +13,3 @@ require_relative "supervisor/memory_monitor"
 
 require_relative "supervisor/environment"
 require_relative "supervisor/supervised"
-
-# @namespace
-module Async
-	# @namespace
-	module Container
-		# @namespace
-		module Supervisor
-		end
-	end
-end

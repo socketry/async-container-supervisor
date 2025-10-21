@@ -13,10 +13,18 @@ module Async
 			#
 			# There are various tasks that can be executed by the worker, such as dumping memory, threads, and garbage collection profiles.
 			class Worker < Client
+				# Run a worker with the given state.
+				#
+				# @parameter state [Hash] The worker state (e.g. process_id, instance info).
+				# @parameter endpoint [IO::Endpoint] The supervisor endpoint to connect to.
 				def self.run(...)
 					self.new(...).run
 				end
 				
+				# Initialize a new worker.
+				#
+				# @parameter state [Hash] The worker state to register with the supervisor.
+				# @parameter endpoint [IO::Endpoint] The supervisor endpoint to connect to.
 				def initialize(state, endpoint: Supervisor.endpoint)
 					@state = state
 					@endpoint = endpoint
@@ -39,12 +47,25 @@ module Async
 					end
 				end
 				
+				# Dump the current fiber scheduler hierarchy.
+				#
+				# Generates a hierarchical view of all running fibers and their relationships.
+				#
+				# @parameter call [Connection::Call] The call to respond to.
+				# @parameter call[:path] [String] Optional file path to save the dump.
 				def do_scheduler_dump(call)
 					dump(call) do |file|
 						Fiber.scheduler.print_hierarchy(file)
 					end
 				end
 				
+				# Dump the entire object space to a file.
+				#
+				# This is a heavyweight operation that dumps all objects in the heap.
+				# Consider using {do_memory_sample} for lighter weight memory leak detection.
+				#
+				# @parameter call [Connection::Call] The call to respond to.
+				# @parameter call[:path] [String] Optional file path to save the dump.
 				def do_memory_dump(call)
 					require "objspace"
 					
@@ -59,8 +80,12 @@ module Async
 				# retained objects allocated during the sampling period. Late-lifecycle
 				# allocations that are retained are likely memory leaks.
 				#
+				# The method samples allocations for the specified duration, forces a garbage
+				# collection, and returns a JSON report showing allocated vs retained memory
+				# broken down by gem, file, location, and class.
+				#
 				# @parameter call [Connection::Call] The call to respond to.
-				# @parameter duration [Numeric] The duration in seconds to sample for (default: 10).
+				# @parameter call[:duration] [Numeric] The duration in seconds to sample for.
 				def do_memory_sample(call)
 					require "memory"
 					
@@ -91,6 +116,12 @@ module Async
 					GC.start
 				end
 				
+				# Dump information about all running threads.
+				#
+				# Includes thread inspection and backtraces for debugging.
+				#
+				# @parameter call [Connection::Call] The call to respond to.
+				# @parameter call[:path] [String] Optional file path to save the dump.
 				def do_thread_dump(call)
 					dump(call) do |file|
 						Thread.list.each do |thread|
@@ -100,11 +131,22 @@ module Async
 					end
 				end
 				
+				# Start garbage collection profiling.
+				#
+				# Enables the GC profiler to track garbage collection performance.
+				#
+				# @parameter call [Connection::Call] The call to respond to.
 				def do_garbage_profile_start(call)
 					GC::Profiler.enable
 					call.finish(started: true)
 				end
 				
+				# Stop garbage collection profiling and return results.
+				#
+				# Disables the GC profiler and returns collected profiling data.
+				#
+				# @parameter call [Connection::Call] The call to respond to.
+				# @parameter call[:path] [String] Optional file path to save the profile.
 				def do_garbage_profile_stop(call)
 					dump(connection, message) do |file|
 						file.puts GC::Profiler.result

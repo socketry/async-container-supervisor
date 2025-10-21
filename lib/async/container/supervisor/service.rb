@@ -10,6 +10,9 @@ require "io/endpoint/bound_endpoint"
 module Async
 	module Container
 		module Supervisor
+			# The supervisor service implementation.
+			#
+			# Manages the lifecycle of the supervisor server and its monitors.
 			class Service < Async::Service::Generic
 				# Initialize the supervisor using the given environment.
 				# @parameter environment [Build::Environment]
@@ -32,10 +35,18 @@ module Async
 					super
 				end
 				
+				# Get the name of the supervisor service.
+				#
+				# @returns [String] The service name.
 				def name
 					@evaluator.name
 				end
 				
+				# Set up the supervisor service in the container.
+				#
+				# Creates and runs the supervisor server with configured monitors.
+				#
+				# @parameter container [Async::Container::Generic] The container to set up in.
 				def setup(container)
 					container_options = @evaluator.container_options
 					health_check_timeout = container_options[:health_check_timeout]

@@ -10,14 +10,18 @@ module Async
 	module Container
 		module Supervisor
 			class MemoryMonitor
+				MEMORY_SAMPLE = {duration: 60, timeout: 60+20}
+				
 				# Create a new memory monitor.
 				#
 				# @parameter interval [Integer] The interval at which to check for memory leaks.
 				# @parameter total_size_limit [Integer] The total size limit of all processes, or nil for no limit.
 				# @parameter options [Hash] Options to pass to the cluster when adding processes.
-				def initialize(interval: 10, total_size_limit: nil, **options)
+				def initialize(interval: 10, total_size_limit: nil, memory_sample: MEMORY_SAMPLE, **options)
 					@interval = interval
 					@cluster = Memory::Leak::Cluster.new(total_size_limit: total_size_limit)
+					
+					@memory_sample = memory_sample
 					
 					# We use these options when adding processes to the cluster:
 					@options = options
@@ -74,6 +78,23 @@ module Async
 				# @parameter monitor [Memory::Leak::Monitor] The monitor that detected the memory leak.
 				# @returns [Boolean] True if the process was killed.
 				def memory_leak_detected(process_id, monitor)
+					Console.info(self, "Memory leak detected!", child: {process_id: process_id}, monitor: monitor)
+					
+					if @memory_sample
+						Console.info(self, "Capturing memory sample...", child: {process_id: process_id}, memory_sample: @memory_sample)
+
+						# We are tracking multiple connections to the same process:
+						connections = @processes[process_id]
+						
+						# Try to capture a memory sample:
+						connections.each do |connection|
+							result = connection.call(do: :memory_sample, **@memory_sample)
+							
+							Console.info(self, "Memory sample completed:", child: {process_id: process_id}, result: result)
+						end
+					end
+					
+					# Kill the process gently:
 					Console.info(self, "Killing process!", child: {process_id: process_id})
 					Process.kill(:INT, process_id)
 					

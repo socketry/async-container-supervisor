@@ -3,6 +3,8 @@
 # Released under the MIT License.
 # Copyright, 2025, by Samuel Williams.
 
+require "securerandom"
+
 require_relative "connection"
 require_relative "endpoint"
 require_relative "dispatchable"
@@ -17,14 +19,22 @@ module Async
 				def initialize(monitors: [], endpoint: Supervisor.endpoint)
 					@monitors = monitors
 					@endpoint = endpoint
+					
+					@connections = {}
 				end
 				
 				attr :monitors
+				attr :connections
 				
 				include Dispatchable
 				
 				def do_register(call)
 					call.connection.state.merge!(call.message[:state])
+					
+					connection_id = SecureRandom.uuid
+					call.connection.state[:connection_id] = connection_id
+					
+					@connections[connection_id] = call.connection
 					
 					@monitors.each do |monitor|
 						monitor.register(call.connection)
@@ -33,6 +43,31 @@ module Async
 					end
 				ensure
 					call.finish
+				end
+				
+				# Forward an operation to a worker connection.
+				#
+				# @parameter call [Connection::Call] The call to handle.
+				# @parameter operation [Hash] The operation to forward, must include :do key.
+				# @parameter connection_id [String] The connection ID to target.
+				def do_forward(call)
+					operation = call[:operation]
+					connection_id = call[:connection_id]
+					
+					unless connection_id
+						call.fail(error: "Missing 'connection_id' parameter")
+						return
+					end
+					
+					connection = @connections[connection_id]
+					
+					unless connection
+						call.fail(error: "Connection not found", connection_id: connection_id)
+						return
+					end
+					
+					# Forward the call to the target connection
+					call.forward(connection, operation)
 				end
 				
 				# Restart the current process group, usually including the supervisor and any other processes.
@@ -48,14 +83,26 @@ module Async
 				end
 				
 				def do_status(call)
+					connections = @connections.map do |connection_id, connection|
+						{
+							connection_id: connection_id,
+							process_id: connection.state[:process_id],
+							state: connection.state,
+						}
+					end
+					
 					@monitors.each do |monitor|
 						monitor.status(call)
 					end
 					
-					call.finish
+					call.finish(connections: connections)
 				end
 				
 				def remove(connection)
+					if connection_id = connection.state[:connection_id]
+						@connections.delete(connection_id)
+					end
+					
 					@monitors.each do |monitor|
 						monitor.remove(connection)
 					rescue => error

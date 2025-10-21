@@ -51,7 +51,7 @@ service "supervisor" do
 			# The interval at which to check for memory leaks.
 			interval: 1,
 			# The total size limit of all processes:
-			maximum_size_limit: 1024 * 1024 * 40, # 40 MB
+			maximum_size_limit: 1024 * 1024 * 1000, # 1000 MB
 		)]
 	end
 end

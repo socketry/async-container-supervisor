@@ -46,6 +46,9 @@ service "supervisor" do
 	include Async::Container::Supervisor::Environment
 	
 	monitors do
-		[Async::Container::Supervisor::MemoryMonitor.new(interval: 1, limit: 1024 * 1024 * 400)]
+		[Async::Container::Supervisor::MemoryMonitor.new(
+			interval: 1,
+			limit: 1024 * 1024 * 400
+		)]
 	end
 end

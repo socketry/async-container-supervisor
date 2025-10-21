@@ -53,6 +53,44 @@ module Async
 					end
 				end
 				
+				# Sample memory allocations over a time period to identify potential leaks.
+				#
+				# This method is much lighter weight than {do_memory_dump} and focuses on
+				# retained objects allocated during the sampling period. Late-lifecycle
+				# allocations that are retained are likely memory leaks.
+				#
+				# @parameter call [Connection::Call] The call to respond to.
+				# @parameter duration [Numeric] The duration in seconds to sample for (default: 10).
+				def do_memory_sample(call)
+					require "memory"
+					
+					unless duration = call[:duration] and duration.positive?
+						raise ArgumentError, "Positive duration is required!"
+					end
+					
+					Console.info(self, "Starting memory sampling...", duration: duration)
+					
+					# Create a sampler to track allocations
+					sampler = Memory::Sampler.new
+					
+					# Start sampling
+					sampler.start
+					
+					# Sample for the specified duration
+					sleep(duration)
+					
+					# Stop sampling
+					sampler.stop
+					
+					Console.info(self, "Memory sampling completed, generating report...", sampler: sampler)
+					
+					# Generate a report focused on retained objects (likely leaks):
+					report = sampler.report
+					call.finish(report: report.as_json)
+				ensure
+					GC.start
+				end
+				
 				def do_thread_dump(call)
 					dump(call) do |file|
 						Thread.list.each do |thread|
@@ -68,11 +106,11 @@ module Async
 				end
 				
 				def do_garbage_profile_stop(call)
-					GC::Profiler.disable
-					
 					dump(connection, message) do |file|
 						file.puts GC::Profiler.result
 					end
+				ensure
+					GC::Profiler.disable
 				end
 				
 				protected def connected!(connection)

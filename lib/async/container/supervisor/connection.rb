@@ -71,6 +71,27 @@ module Async
 						@queue.closed?
 					end
 					
+					# Forward this call to another connection, proxying all responses back.
+					#
+					# This provides true streaming forwarding - intermediate responses flow through
+					# in real-time rather than being buffered.
+					#
+					# @parameter target_connection [Connection] The connection to forward the call to.
+					# @parameter operation [Hash] The operation request to forward (must include :do key).
+					def forward(target_connection, operation)
+						# Forward the operation in an async task to avoid blocking
+						Async do
+							# Make the call to the target connection and stream responses back:
+							Call.call(target_connection, **operation) do |response|
+								# Push each response through our queue:
+								self.push(**response)
+							end
+						ensure
+							# Close our queue to signal completion:
+							@queue.close
+						end
+					end
+					
 					def self.dispatch(connection, target, id, message)
 						Async do
 							call = self.new(connection, id, message)

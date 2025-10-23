@@ -35,12 +35,6 @@ graph TD
     Worker1 -.->|connects via IPC| Supervisor
     Worker2 -.->|connects via IPC| Supervisor
     WorkerN -.->|connects via IPC| Supervisor
-    
-    style Controller fill:#e1f5ff
-    style Supervisor fill:#fff4e1
-    style Worker1 fill:#e8f5e9
-    style Worker2 fill:#e8f5e9
-    style WorkerN fill:#e8f5e9
 ```
 
 **Important:** The supervisor process is itself just another process managed by the root controller. If the supervisor crashes, the controller will restart it, and all worker processes will automatically reconnect to the new supervisor. This design ensures high availability and fault tolerance.

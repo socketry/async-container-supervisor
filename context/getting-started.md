@@ -109,7 +109,13 @@ This will start:
 
 ### Adding Health Monitors
 
-You can add monitors to detect and respond to unhealthy conditions. For example, to add a memory monitor:
+You can add monitors to observe worker health and automatically respond to issues. Monitors are useful for:
+
+- **Memory leak detection**: Automatically restart workers consuming excessive memory.
+- **Performance monitoring**: Track CPU and memory usage trends.
+- **Capacity planning**: Understand resource requirements.
+
+For example, to add monitoring:
 
 ```ruby
 service "supervisor" do
@@ -117,17 +123,22 @@ service "supervisor" do
 	
 	monitors do
 		[
-			# Restart workers that exceed 500MB of memory:
+			# Log process metrics for observability:
+			Async::Container::Supervisor::ProcessMonitor.new(
+				interval: 60
+			),
+			
+			# Restart workers exceeding memory limits:
 			Async::Container::Supervisor::MemoryMonitor.new(
-				interval: 10,  # Check every 10 seconds
-				maximum_size_limit: 1024 * 1024 * 500  # 500MB limit
+				interval: 10,
+				maximum_size_limit: 1024 * 1024 * 500  # 500MB limit per process
 			)
 		]
 	end
 end
 ```
 
-The {ruby Async::Container::Supervisor::MemoryMonitor} will periodically check worker memory usage and restart any workers that exceed the configured limit.
+See the {ruby Async::Container::Supervisor::MemoryMonitor Memory Monitor} and {ruby Async::Container::Supervisor::ProcessMonitor Process Monitor} guides for detailed configuration options and best practices.
 
 ### Collecting Diagnostics
 

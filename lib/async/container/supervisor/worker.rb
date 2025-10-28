@@ -107,11 +107,15 @@ module Async
 					# Stop sampling
 					sampler.stop
 					
-					Console.info(self, "Memory sampling completed, generating report...", sampler: sampler)
+					report = sampler.report
+					
+					# This is a temporary log to help with debugging:
+					buffer = StringIO.new
+					report.print(buffer)
+					Console.info(self, "Memory sample completed.", report: buffer.string)
 					
 					# Generate a report focused on retained objects (likely leaks):
-					report = sampler.report
-					call.finish(report: report.as_json)
+					call.finish(report: report)
 				ensure
 					GC.start
 				end

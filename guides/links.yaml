@@ -1,3 +1,8 @@
 getting-started:
   order: 1
 
+memory-monitor:
+  order: 2
+
+process-monitor:
+  order: 3

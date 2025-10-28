@@ -6,7 +6,7 @@
 
 require "async/container/supervisor"
 
-class SleepService < Async::Service::Generic
+class WorkerService < Async::Service::Generic
 	def setup(container)
 		super
 		
@@ -20,14 +20,24 @@ class SleepService < Async::Service::Generic
 				
 				instance.ready!
 				
+				# Simulate some CPU and memory activity
+				counter = 0
 				chunks = []
 				while true
-					chunks << " " * 1024 * 1024 * rand(10)
+					# Do some work
+					counter += 1
+					if counter % 10 == 0
+						chunks << " " * 1024 * 1024 * rand(5)
+					end
+					
+					# Simulate CPU usage
+					(1..1000).each {|i| Math.sqrt(i)}
+					
 					sleep 1
 					instance.ready!
 					
 					uptime = Time.now - start_time
-					instance.name = "Sleeping for #{uptime.to_i} seconds..."
+					instance.name = "Worker running for #{uptime.to_i} seconds (counter: #{counter})"
 				end
 			ensure
 				Console.info(self, "Exiting...")
@@ -36,8 +46,8 @@ class SleepService < Async::Service::Generic
 	end	
 end
 
-service "sleep" do
-	service_class SleepService
+service "worker" do
+	service_class WorkerService
 	
 	include Async::Container::Supervisor::Supervised
 end
@@ -46,9 +56,16 @@ service "supervisor" do
 	include Async::Container::Supervisor::Environment
 	
 	monitors do
-		[Async::Container::Supervisor::MemoryMonitor.new(
-			interval: 1,
-			maximum_size_limit: 1024 * 1024 * 400
-		)]
+		[
+			# Monitor process metrics every 10 seconds
+			Async::Container::Supervisor::ProcessMonitor.new(interval: 10),
+			
+			# Also monitor memory and restart workers if they exceed 500MB
+			Async::Container::Supervisor::MemoryMonitor.new(
+				interval: 5,
+				maximum_size_limit: 1024 * 1024 * 500
+			)
+		]
 	end
 end
+

@@ -10,6 +10,7 @@ require_relative "supervisor/worker"
 require_relative "supervisor/client"
 
 require_relative "supervisor/memory_monitor"
+require_relative "supervisor/process_monitor"
 
 require_relative "supervisor/environment"
 require_relative "supervisor/supervised"

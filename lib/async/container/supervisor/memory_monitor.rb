@@ -13,7 +13,7 @@ module Async
 			#
 			# Uses the `memory` gem to track process memory and detect leaks.
 			class MemoryMonitor
-				MEMORY_SAMPLE = {duration: 60, timeout: 60+20}
+				MEMORY_SAMPLE = {duration: 30, timeout: 30*4}
 				
 				# Create a new memory monitor.
 				#

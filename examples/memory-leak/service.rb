@@ -22,7 +22,7 @@ class SleepService < Async::Service::Generic
 				
 				chunks = []
 				while true
-					Console.info(self, "Leaking memory...")
+					# Console.info(self, "Leaking memory...")
 					chunks << " " * 1024 * 1024 * rand(10)
 					sleep 1
 					instance.ready!
@@ -51,7 +51,7 @@ service "supervisor" do
 			# The interval at which to check for memory leaks.
 			interval: 1,
 			# The total size limit of all processes:
-			maximum_size_limit: 1024 * 1024 * 1000, # 1000 MB
+			maximum_size_limit: 1024 * 1024 * 100, # 1000 MB
 		)]
 	end
 end

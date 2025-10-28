@@ -1,5 +1,10 @@
 # Releases
 
+## Unreleased
+
+  - Add `Async::Container::Supervisor::ProcessMonitor` for logging CPU and memory metrics periodically.
+  - Fix documentation to use correct `maximum_size_limit:` parameter name for `MemoryMonitor` (was incorrectly documented as `limit:`).
+
 ## v0.7.0
 
   - If a memory leak is detected, sample memory usage for 60 seconds before exiting.

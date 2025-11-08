@@ -38,7 +38,7 @@ describe Async::Container::Supervisor::Server do
 		stream.close
 		
 		# Verify error was logged about the parsing failure
-		error_logs = console_capture.select {|log| log[:severity] == :warn}
+		error_logs = console_capture.select{|log| log[:severity] == :warn}
 		expect(error_logs).not.to be(:empty?)
 	end
 	
@@ -82,7 +82,7 @@ describe Async::Container::Supervisor::Server do
 			)
 			
 			# Verify error was logged about the monitor failure:
-			error_log = console_capture.find {|log| log[:severity] == :error && log[:message] =~ /Error while registering process/}
+			error_log = console_capture.find{|log| log[:severity] == :error && log[:message] =~ /Error while registering process/}
 			expect(error_log).to be_truthy
 			
 			stream.close
@@ -122,7 +122,7 @@ describe Async::Container::Supervisor::Server do
 			reactor.sleep(0.01)
 			
 			# Verify error was logged about the monitor removal failure:
-			error_log = console_capture.find {|log| log[:severity] == :error && log[:message] =~ /Error while removing process/}
+			error_log = console_capture.find{|log| log[:severity] == :error && log[:message] =~ /Error while removing process/}
 			expect(error_log).to be_truthy
 			
 			# Verify server is still working by sending a new request:
@@ -159,7 +159,7 @@ describe Async::Container::Supervisor::Server do
 		reactor.sleep(0.01)
 		
 		# Verify a debug warning was logged about ignoring the message:
-		debug_log = console_capture.find {|log| log[:severity] == :debug && log[:message] =~ /Ignoring message/}
+		debug_log = console_capture.find{|log| log[:severity] == :debug && log[:message] =~ /Ignoring message/}
 		expect(debug_log).to be_truthy
 		
 		# Send a valid message to confirm the server is still working:

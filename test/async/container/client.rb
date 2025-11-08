@@ -23,7 +23,7 @@ describe Async::Container::Supervisor::Client do
 	with "#run" do
 		it "can run the client" do
 			connected = Async::Promise.new
-			expect(client).to receive(:connected!){|connection| connected.resolve(true)}
+			expect(client).to receive(:connected!) {|connection| connected.resolve(true)}
 			
 			client_task = client.run
 			

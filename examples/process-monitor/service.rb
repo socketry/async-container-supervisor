@@ -31,7 +31,7 @@ class WorkerService < Async::Service::Generic
 					end
 					
 					# Simulate CPU usage
-					(1..1000).each {|i| Math.sqrt(i)}
+					(1..1000).each{|i| Math.sqrt(i)}
 					
 					sleep 1
 					instance.ready!

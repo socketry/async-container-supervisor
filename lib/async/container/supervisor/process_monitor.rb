@@ -15,14 +15,14 @@ module Async
 			# by tracking the parent process ID (ppid), which is more efficient than tracking
 			# individual processes.
 			class ProcessMonitor
-			# Create a new process monitor.
-			#
-			# @parameter interval [Integer] The interval in seconds at which to log process metrics.
-			# @parameter ppid [Integer] The parent process ID to monitor. If nil, uses the current process to capture its children.
-			def initialize(interval: 60, ppid: nil)
-				@interval = interval
-				@ppid = ppid || Process.ppid
-			end
+				# Create a new process monitor.
+				#
+				# @parameter interval [Integer] The interval in seconds at which to log process metrics.
+				# @parameter ppid [Integer] The parent process ID to monitor. If nil, uses the current process to capture its children.
+				def initialize(interval: 60, ppid: nil)
+					@interval = interval
+					@ppid = ppid || Process.ppid
+				end
 				
 				# @attribute [Integer] The parent process ID being monitored.
 				attr :ppid
@@ -68,20 +68,20 @@ module Async
 				# Periodically captures and logs process metrics for the entire process tree.
 				#
 				# @returns [Async::Task] The task that is running the process monitor.
-			def run
-				Async do
-					while true
-						metrics = self.metrics
-						
-						# Log each process individually for better searchability in log platforms:
-						metrics.each do |process_id, general|
-							Console.info(self, "Process metrics captured.", general: general)
+				def run
+					Async do
+						while true
+							metrics = self.metrics
+							
+							# Log each process individually for better searchability in log platforms:
+							metrics.each do |process_id, general|
+								Console.info(self, "Process metrics captured.", general: general)
+							end
+							
+							sleep(@interval)
 						end
-						
-						sleep(@interval)
 					end
 				end
-			end
 			end
 		end
 	end

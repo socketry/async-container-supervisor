@@ -28,7 +28,7 @@ service "supervisor" do
 			Async::Container::Supervisor::MemoryMonitor.new(
 				# Check worker memory every 10 seconds:
 				interval: 10,
-
+				
 				# Restart workers exceeding 500MB:
 				maximum_size_limit: 1024 * 1024 * 500
 			)

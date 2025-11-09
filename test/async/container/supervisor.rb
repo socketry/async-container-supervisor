@@ -17,9 +17,9 @@ describe Async::Container::Supervisor do
 		connection = worker.connect
 		
 		# Wait for the client to connect to the server:
-		sleep(0.001) until registration_monitor.registrations.any?
+		event = registration_monitor.pop
+		connection = event.connection
 		
-		connection = registration_monitor.registrations.first
 		expect(connection.state).to have_keys(
 			process_id: be == ::Process.pid
 		)
@@ -32,10 +32,10 @@ describe Async::Container::Supervisor do
 			worker = Async::Container::Supervisor::Worker.new(state, endpoint: endpoint)
 			worker_task = worker.run
 			
-			sleep(0.001) until registration_monitor.registrations.any?
+			event = registration_monitor.pop
+			connection = event.connection
 			
 			path = File.join(@root, "memory.json")
-			connection = registration_monitor.registrations.first
 			connection.call(do: :memory_dump, path: path)
 			
 			expect(File.size(path)).to be > 0
@@ -110,9 +110,8 @@ describe Async::Container::Supervisor do
 			worker = Async::Container::Supervisor::Worker.new(state, endpoint: endpoint)
 			worker_task = worker.run
 			
-			sleep(0.001) until registration_monitor.registrations.any?
-			
-			connection = registration_monitor.registrations.first
+			event = registration_monitor.pop
+			connection = event.connection
 			
 			# Sample for a short duration (1 second for test speed)
 			result = connection.call(do: :memory_sample, duration: 1)

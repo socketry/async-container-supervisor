@@ -25,9 +25,9 @@ module Async
 				#
 				# @parameter state [Hash] The worker state to register with the supervisor.
 				# @parameter endpoint [IO::Endpoint] The supervisor endpoint to connect to.
-				def initialize(state, endpoint: Supervisor.endpoint)
+				def initialize(state = nil, endpoint: Supervisor.endpoint)
+					super(endpoint: endpoint)
 					@state = state
-					@endpoint = endpoint
 				end
 				
 				include Dispatchable
@@ -164,6 +164,7 @@ module Async
 					
 					# Register the worker with the supervisor:
 					connection.call(do: :register, state: @state)
+					# We ignore the response (it contains the `connection_id`).
 				end
 			end
 		end

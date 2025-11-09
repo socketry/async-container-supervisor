@@ -39,7 +39,9 @@ module Async
 				# @parameter call [Connection::Call] The registration call.
 				# @parameter call[:state] [Hash] The worker state to merge (e.g. process_id).
 				def do_register(call)
-					call.connection.state.merge!(call.message[:state])
+					if state = call.message[:state]
+						call.connection.state.merge!(state)
+					end
 					
 					connection_id = SecureRandom.uuid
 					call.connection.state[:connection_id] = connection_id
@@ -52,7 +54,7 @@ module Async
 						Console.error(self, "Error while registering process!", monitor: monitor, exception: error)
 					end
 				ensure
-					call.finish
+					call.finish(connection_id: connection_id)
 				end
 				
 				# Forward an operation to a worker connection.

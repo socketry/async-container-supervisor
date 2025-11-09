@@ -42,9 +42,10 @@ describe Async::Container::Supervisor::Supervised do
 		worker = evaluator.make_supervised_worker(state)
 		worker_task = worker.run
 		
-		sleep(0.001) until registration_monitor.registrations.any?
+		# Wait for the worker to register with the supervisor.
+		event = registration_monitor.pop
+		connection = event.connection
 		
-		connection = registration_monitor.registrations.first
 		expect(connection.state).to have_keys(
 			process_id: be == ::Process.pid
 		)

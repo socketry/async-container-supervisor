@@ -13,8 +13,10 @@ module Async
 	module Container
 		module Supervisor
 			class RegistrationMonitor
+				Event = Struct.new(:type, :connection)
+				
 				def initialize
-					@registrations = []
+					@registrations = ::Thread::Queue.new
 				end
 				
 				attr :registrations
@@ -22,12 +24,20 @@ module Async
 				def run
 				end
 				
+				def status(call)
+					call.push(registrations: @registrations.size)
+				end
+				
+				def pop(...)
+					@registrations.pop(...)
+				end
+				
 				def register(connection)
-					@registrations << connection
+					@registrations << Event.new(:register, connection)
 				end
 				
 				def remove(connection)
-					@registrations.delete(connection)
+					@registrations << Event.new(:remove, connection)
 				end
 			end
 			

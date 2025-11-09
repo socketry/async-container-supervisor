@@ -4,14 +4,17 @@
 # Copyright, 2025, by Samuel Williams.
 
 require "async/container/supervisor/process_monitor"
-require "async/container/supervisor/connection"
+require "async/container/supervisor/a_monitor"
+
 require "sus/fixtures/console/captured_logger"
 
 describe Async::Container::Supervisor::ProcessMonitor do
 	include Sus::Fixtures::Console::CapturedLogger
-	let(:monitor) {subject.new(interval: 10)}
 	
-	it "has a ppid" do
+	let(:monitor) {subject.new(interval: 10)}
+	it_behaves_like Async::Container::Supervisor::AMonitor
+	
+	it "has a parent process id" do
 		expect(monitor.ppid).to be == Process.ppid
 	end
 	

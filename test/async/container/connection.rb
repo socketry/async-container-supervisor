@@ -6,9 +6,40 @@
 require "async/container/supervisor/connection"
 require "stringio"
 
+class TestTarget
+	def initialize(&block)
+		@block = block
+	end
+	
+	def dispatch(call)
+		@block.call(call)
+	end
+end
+
 describe Async::Container::Supervisor::Connection do
 	let(:stream) {StringIO.new}
 	let(:connection) {Async::Container::Supervisor::Connection.new(stream)}
+	
+	with "dispatch" do
+		it "handles failed writes" do
+			stream.write(JSON.dump({id: 1, do: :test}) << "\n")
+			stream.rewind
+			
+			expect(stream).to receive(:write).and_raise(IOError, "Test error")
+			
+			target = TestTarget.new do |call|
+				Async do
+					call.push(status: "working")
+					sleep(0) # Yield back to the dispatch to allow the write to fail.
+					call.finish(status: "done")
+				end
+			end
+			
+			connection.run(target)
+			
+			expect(connection.calls).to be(:empty?)
+		end
+	end
 	
 	with subject::Call do
 		let(:test_call) {Async::Container::Supervisor::Connection::Call.new(connection, 1, {do: :test, data: "value"})}

@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Better handling of write failures in `Connection::Call.dispatch`, ensuring we don't leak calls.
+
 ## v0.8.0
 
   - Add `Async::Container::Supervisor::ProcessMonitor` for logging CPU and memory metrics periodically.

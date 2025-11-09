@@ -4,6 +4,7 @@
 # Copyright, 2025, by Samuel Williams.
 
 require "json"
+require "async"
 
 module Async
 	module Container
@@ -154,12 +155,14 @@ module Async
 								connection.write(id: id, **response)
 							end
 						ensure
-							# If the queue is closed, we don't need to send a finished message.
-							unless call.closed?
-								connection.write(id: id, finished: true)
-							end
-							
+							# Ensure the call is removed from the connection's calls hash, otherwise it will leak:
 							connection.calls.delete(id)
+							
+							# If the queue is closed, we don't need to send a finished message:
+							unless call.closed?
+								# If the above write failed, this is likely to fail too, and we can safely ignore it.
+								connection.write(id: id, finished: true) rescue nil
+							end
 						end
 					end
 					

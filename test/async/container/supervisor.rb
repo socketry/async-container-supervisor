@@ -123,6 +123,5 @@ describe Async::Container::Supervisor do
 		ensure
 			worker_task&.stop
 		end
-		
 	end
 end

@@ -29,6 +29,16 @@ module Async
 						type: be == :remove,
 					)
 				end
+				
+				it "can respond to status calls" do
+					worker = Worker.new(endpoint: endpoint)
+					connection = worker.connect
+					
+					response = connection.call(do: :status)
+					
+					# Maybe we could be a bit more specific.
+					expect(response).to be_a(Array)
+				end
 			end
 		end
 	end

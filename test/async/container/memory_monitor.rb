@@ -21,6 +21,17 @@ describe Async::Container::Supervisor::MemoryMonitor do
 			task = monitor.run
 			expect(task).to be(:running?)
 		end
+		
+		it "can handle failures" do
+			expect(monitor.cluster).to receive(:check!).and_raise(Errno::ESRCH)
+			
+			task = monitor.run
+			expect(task).to be(:running?)
+			
+			sleep 1
+			
+			expect(task).to be(:running?)
+		end
 	end
 end
 

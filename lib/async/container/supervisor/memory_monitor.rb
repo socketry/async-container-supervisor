@@ -6,6 +6,8 @@
 require "memory/leak/cluster"
 require "set"
 
+require_relative "loop"
+
 module Async
 	module Container
 		module Supervisor
@@ -31,6 +33,9 @@ module Async
 					
 					@processes = Hash.new{|hash, key| hash[key] = Set.new.compare_by_identity}
 				end
+				
+				# @attribute [Memory::Leak::Cluster] The cluster of processes being monitored.
+				attr_reader :cluster
 				
 				# Add a process to the memory monitor. You may override this to control how processes are added to the cluster.
 				#
@@ -98,8 +103,14 @@ module Async
 					end
 					
 					# Kill the process gently:
-					Console.info(self, "Killing process!", child: {process_id: process_id})
-					Process.kill(:INT, process_id)
+					begin
+						Console.info(self, "Killing process!", child: {process_id: process_id})
+						Process.kill(:INT, process_id)
+					rescue Errno::ESRCH
+						# No such process - he's dead Jim.
+					rescue => error
+						Console.warn(self, "Failed to kill process!", child: {process_id: process_id}, exception: error)
+					end
 					
 					true
 				end
@@ -109,14 +120,17 @@ module Async
 				# @returns [Async::Task] The task that is running the memory monitor.
 				def run
 					Async do
-						while true
+						Loop.run(interval: @interval) do
 							# This block must return true if the process was killed.
 							@cluster.check! do |process_id, monitor|
 								Console.error(self, "Memory leak detected!", child: {process_id: process_id}, monitor: monitor)
-								memory_leak_detected(process_id, monitor)
+								
+								begin
+									memory_leak_detected(process_id, monitor)
+								rescue => error
+									Console.error(self, "Failed to handle memory leak!", child: {process_id: process_id}, exception: error)
+								end
 							end
-							
-							sleep(@interval)
 						end
 					end
 				end

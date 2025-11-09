@@ -3,6 +3,7 @@
 ## Unreleased
 
   - Better handling of write failures in `Connection::Call.dispatch`, ensuring we don't leak calls.
+  - Robust monitor loop handling - restart on failure, and align loop iterations.
 
 ## v0.8.0
 

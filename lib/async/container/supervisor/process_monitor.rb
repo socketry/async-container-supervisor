@@ -4,6 +4,9 @@
 # Copyright, 2025, by Samuel Williams.
 
 require "process/metrics"
+require_relative "loop"
+
+require_relative "loop"
 
 module Async
 	module Container
@@ -70,15 +73,13 @@ module Async
 				# @returns [Async::Task] The task that is running the process monitor.
 				def run
 					Async do
-						while true
+						Loop.run(interval: @interval) do
 							metrics = self.metrics
 							
 							# Log each process individually for better searchability in log platforms:
 							metrics.each do |process_id, general|
 								Console.info(self, "Process metrics captured.", general: general)
 							end
-							
-							sleep(@interval)
 						end
 					end
 				end

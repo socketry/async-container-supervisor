@@ -28,6 +28,8 @@ module Async
 					expect(event).to have_attributes(
 						type: be == :remove,
 					)
+				ensure
+					connection&.close
 				end
 				
 				it "can respond to status calls" do
@@ -38,6 +40,8 @@ module Async
 					
 					# Maybe we could be a bit more specific.
 					expect(response).to be_a(Array)
+				ensure
+					connection&.close
 				end
 			end
 		end

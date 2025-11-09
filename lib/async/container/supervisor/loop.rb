@@ -29,6 +29,8 @@ module Async
 					end
 				end
 			end
+			
+			private_constant :Loop
 		end
 	end
 end

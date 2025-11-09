@@ -213,7 +213,11 @@ module Async
 								end
 							end
 						ensure
+							# Ensure the call is removed from the connection's calls hash, otherwise it will leak:
 							connection.calls.delete(id)
+							
+							# Ensure the call is closed, so that `Call#pop` will return `nil`.
+							call.close
 						end
 					end
 				end

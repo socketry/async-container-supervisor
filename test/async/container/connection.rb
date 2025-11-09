@@ -4,6 +4,7 @@
 # Copyright, 2025, by Samuel Williams.
 
 require "async/container/supervisor/connection"
+require "sus/fixtures/async/scheduler_context"
 require "stringio"
 
 class TestTarget
@@ -25,7 +26,7 @@ describe Async::Container::Supervisor::Connection do
 			stream.write(JSON.dump({id: 1, do: :test}) << "\n")
 			stream.rewind
 			
-			expect(stream).to receive(:write).and_raise(IOError, "Test error")
+			expect(stream).to receive(:write).and_raise(IOError, "Write error")
 			
 			target = TestTarget.new do |call|
 				Async do
@@ -44,7 +45,7 @@ describe Async::Container::Supervisor::Connection do
 			stream.write(JSON.dump({id: 1, do: :test}) << "\n")
 			stream.rewind
 			
-			expect(stream).to receive(:write).and_raise(IOError, "Test error")
+			expect(stream).to receive(:write).and_raise(IOError, "Write error")
 			
 			task = nil
 			
@@ -52,7 +53,7 @@ describe Async::Container::Supervisor::Connection do
 				task = Async do
 					while true
 						call.push(status: "working")
-						sleep(1) # Loop forever (until the queue is closed).
+						sleep(0.001) # Loop forever (until the queue is closed).
 					end
 				end
 			end
@@ -63,13 +64,17 @@ describe Async::Container::Supervisor::Connection do
 			expect(task).to be(:failed?)
 			expect{task.wait}.to raise_exception(ClosedQueueError)
 		end
+	end
+	
+	with "call" do
+		include Sus::Fixtures::Async::SchedulerContext
 		
 		it "handles failed writes when making a call" do
-			expect(stream).to receive(:write).and_raise(IOError, "Test error")
+			expect(stream).to receive(:write).and_raise(IOError, "Write error")
 			
 			expect do
 				connection.call(do: :test)
-			end.to raise_exception(IOError, message: be =~ /Test error/)
+			end.to raise_exception(IOError, message: be =~ /Write error/)
 			
 			expect(connection.calls).to be(:empty?)
 		end

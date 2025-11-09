@@ -1,11 +1,11 @@
 # Releases
 
-## Unreleased
+## v0.9.0
 
   - Better handling of write failures in `Connection::Call.dispatch`, ensuring we don't leak calls.
   - Robust monitor loop handling - restart on failure, and align loop iterations.
   - Disable memory sampler by default and use text output format.
-    - Introduce support for redirecting dump output to logs.
+      - Introduce support for redirecting dump output to logs.
 
 ## v0.8.0
 

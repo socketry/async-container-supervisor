@@ -32,18 +32,25 @@ module Async
 				
 				include Dispatchable
 				
-				private def dump(call)
+				private def dump(call, buffer: true)
 					if path = call[:path]
 						File.open(path, "w") do |file|
 							yield file
 						end
 						
 						call.finish(path: path)
-					else
+					elsif buffer
 						buffer = StringIO.new
 						yield buffer
 						
-						call.finish(data: buffer.string)
+						if message = call[:log]
+							Console.info(self, message, data: buffer.string)
+							call.finish
+						else
+							call.finish(data: buffer.string)
+						end
+					else
+						call.fail(error: {message: "Buffered output not supported!"})
 					end
 				end
 				
@@ -69,7 +76,7 @@ module Async
 				def do_memory_dump(call)
 					require "objspace"
 					
-					dump(call) do |file|
+					dump(call, buffer: false) do |file|
 						ObjectSpace.dump_all(output: file)
 					end
 				end
@@ -109,13 +116,9 @@ module Async
 					
 					report = sampler.report
 					
-					# This is a temporary log to help with debugging:
-					buffer = StringIO.new
-					report.print(buffer)
-					Console.info(self, "Memory sample completed.", report: buffer.string)
-					
-					# Generate a report focused on retained objects (likely leaks):
-					call.finish(report: report)
+					dump(call) do |file|
+						file.puts(report.to_s)
+					end
 				ensure
 					GC.start
 				end

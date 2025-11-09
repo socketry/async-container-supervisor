@@ -80,8 +80,8 @@ module Async
 					# Iterate over all responses from the call.
 					#
 					# @yields {|response| ...} Each response from the queue.
-					def each(&block)
-						while response = self.pop
+					def each(timeout: nil, &block)
+						while response = self.pop(timeout: timeout)
 							yield response
 						end
 					end
@@ -175,7 +175,7 @@ module Async
 					# @parameter message [Hash] The call message/parameters.
 					# @yields {|response| ...} Each intermediate response if block given.
 					# @returns [Hash, Array] The final response or array of intermediate responses.
-					def self.call(connection, **message, &block)
+					def self.call(connection, timeout: nil, **message, &block)
 						id = connection.next_id
 						call = self.new(connection, id, message)
 						
@@ -184,11 +184,11 @@ module Async
 							connection.write(id: id, **message)
 							
 							if block_given?
-								call.each(&block)
+								call.each(timeout: timeout, &block)
 							else
 								intermediate = nil
 								
-								while response = call.pop
+								while response = call.pop(timeout: timeout)
 									if response.delete(:finished)
 										if intermediate
 											if response.any?
@@ -245,23 +245,6 @@ module Async
 				def write(**message)
 					@stream.write(JSON.dump(message) << "\n")
 					@stream.flush
-				end
-				
-				# Make a synchronous call and wait for a single response.
-				#
-				# @parameter timeout [Numeric, nil] Optional timeout for the call.
-				# @parameter message [Hash] The call message.
-				# @raises [IOError | Errno::EPIPE | Errno::ECONNRESET] If the write fails.
-				# @returns [Hash] The response.
-				def call(timeout: nil, **message)
-					id = next_id
-					calls[id] = ::Thread::Queue.new
-					
-					write(id: id, **message)
-					
-					return calls[id].pop(timeout: timeout)
-				ensure
-					calls.delete(id)
 				end
 				
 				# Read a message from the connection stream.

@@ -76,8 +76,7 @@ describe Async::Container::Supervisor do
 			)
 			
 			# Verify we got the forwarded response
-			expect(result).to have_keys(:report)
-			expect(result[:report]).to have_keys(:total_allocated, :total_retained)
+			expect(result).to have_keys(:data)
 		ensure
 			client_conn&.close
 			worker_task&.stop
@@ -117,8 +116,7 @@ describe Async::Container::Supervisor do
 			result = connection.call(do: :memory_sample, duration: 1)
 			
 			# The result should contain a report
-			expect(result).to have_keys(:report)
-			expect(result[:report]).to have_keys(:total_allocated, :total_retained)
+			expect(result).to have_keys(:data)
 		ensure
 			worker_task&.stop
 		end

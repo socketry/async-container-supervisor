@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.9.1
 
   - Close `Call` queue if asynchronous call fails during dispatch - further messages will fail with `ClosedQueueError`.
 

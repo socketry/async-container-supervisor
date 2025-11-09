@@ -26,6 +26,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container-supervisor/releases/index) for all releases.
 
+### v0.9.1
+
+  - Close `Call` queue if asynchronous call fails during dispatch - further messages will fail with `ClosedQueueError`.
+
 ### v0.9.0
 
   - Better handling of write failures in `Connection::Call.dispatch`, ensuring we don't leak calls.

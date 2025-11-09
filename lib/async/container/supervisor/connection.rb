@@ -251,6 +251,7 @@ module Async
 				#
 				# @parameter timeout [Numeric, nil] Optional timeout for the call.
 				# @parameter message [Hash] The call message.
+				# @raises [IOError | Errno::EPIPE | Errno::ECONNRESET] If the write fails.
 				# @returns [Hash] The response.
 				def call(timeout: nil, **message)
 					id = next_id

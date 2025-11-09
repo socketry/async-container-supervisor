@@ -21,7 +21,7 @@ describe Async::Container::Supervisor::Connection do
 	let(:connection) {Async::Container::Supervisor::Connection.new(stream)}
 	
 	with "dispatch" do
-		it "handles failed writes" do
+		it "handles failed writes when dispatching a call" do
 			stream.write(JSON.dump({id: 1, do: :test}) << "\n")
 			stream.rewind
 			
@@ -36,6 +36,16 @@ describe Async::Container::Supervisor::Connection do
 			end
 			
 			connection.run(target)
+			
+			expect(connection.calls).to be(:empty?)
+		end
+		
+		it "handles failed writes when making a call" do
+			expect(stream).to receive(:write).and_raise(IOError, "Test error")
+			
+			expect do
+				connection.call(do: :test)
+			end.to raise_exception(IOError, message: be =~ /Test error/)
 			
 			expect(connection.calls).to be(:empty?)
 		end

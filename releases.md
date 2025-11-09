@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Close `Call` queue if asynchronous call fails during dispatch - further messages will fail with `ClosedQueueError`.
+
 ## v0.9.0
 
   - Better handling of write failures in `Connection::Call.dispatch`, ensuring we don't leak calls.

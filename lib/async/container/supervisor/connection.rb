@@ -147,10 +147,13 @@ module Async
 					def self.dispatch(connection, target, id, message)
 						Async do
 							call = self.new(connection, id, message)
+							# Track the call in the connection's calls hash:
 							connection.calls[id] = call
 							
+							# Dispatch the call to the target (synchronously):
 							target.dispatch(call)
 							
+							# Stream responses back to the connection (asynchronously):
 							while response = call.pop
 								connection.write(id: id, **response)
 							end
@@ -160,6 +163,9 @@ module Async
 							
 							# If the queue is closed, we don't need to send a finished message:
 							unless call.closed?
+								# Ensure the call is closed, to prevent messages being buffered:
+								call.close
+								
 								# If the above write failed, this is likely to fail too, and we can safely ignore it.
 								connection.write(id: id, finished: true) rescue nil
 							end
@@ -276,16 +282,19 @@ module Async
 				#
 				# @parameter target [Dispatchable] The target to dispatch calls to.
 				def run(target)
+					# Process incoming messages from the connection:
 					self.each do |message|
+						# If the message has an ID, it is a response to a call:
 						if id = message.delete(:id)
+							# Find the call in the connection's calls hash:
 							if call = @calls[id]
-								# Response to a call:
+								# Enqueue the response for the call:
 								call.push(**message)
 							elsif message.key?(:do)
-								# Incoming call:
+								# Otherwise, if we couldn't find an existing call, it must be a new call:
 								Call.dispatch(self, target, id, message)
 							else
-								# Likely a response to a timed-out call, ignore it:
+								# Finally, if none of the above, it is likely a response to a timed-out call, so ignore it:
 								Console.debug(self, "Ignoring message:", message)
 							end
 						else

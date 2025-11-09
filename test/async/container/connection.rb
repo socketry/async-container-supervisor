@@ -40,6 +40,30 @@ describe Async::Container::Supervisor::Connection do
 			expect(connection.calls).to be(:empty?)
 		end
 		
+		it "closes the queue when the connection fails" do
+			stream.write(JSON.dump({id: 1, do: :test}) << "\n")
+			stream.rewind
+			
+			expect(stream).to receive(:write).and_raise(IOError, "Test error")
+			
+			task = nil
+			
+			target = TestTarget.new do |call|
+				task = Async do
+					while true
+						call.push(status: "working")
+						sleep(1) # Loop forever (until the queue is closed).
+					end
+				end
+			end
+			
+			connection.run(target)
+			
+			expect(connection.calls).to be(:empty?)
+			expect(task).to be(:failed?)
+			expect{task.wait}.to raise_exception(ClosedQueueError)
+		end
+		
 		it "handles failed writes when making a call" do
 			expect(stream).to receive(:write).and_raise(IOError, "Test error")
 			

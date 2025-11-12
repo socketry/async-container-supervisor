@@ -10,11 +10,32 @@ describe Async::Container::Supervisor::Server do
 	include Async::Container::Supervisor::AServer
 	include Sus::Fixtures::Console::CapturedLogger
 	
+	let(:message_wrapper) {Async::Container::Supervisor::MessageWrapper.new}
+	
+	# Helper to write length-prefixed MessagePack data
+	def write_message(stream, message)
+		data = message_wrapper.pack(message)
+		stream.write([data.bytesize].pack("N") + data)
+		stream.flush
+	end
+	
+	# Helper to read length-prefixed MessagePack data
+	def read_message(stream)
+		length_data = stream.read(4)
+		return nil unless length_data && length_data.bytesize == 4
+		
+		length = length_data.unpack1("N")
+		data = stream.read(length)
+		return nil unless data && data.bytesize == length
+		
+		message_wrapper.unpack(data)
+	end
+	
 	it "can handle unexpected failures" do
 		# First, send invalid JSON to trigger the error:
 		endpoint.connect do |stream|
-			# Send malformed JSON that will cause parsing errors:
-			stream.write("not valid json\n")
+			# Send malformed data (just 2 bytes claiming huge size, but no actual data):
+			stream.write([999999].pack("N"))
 			stream.flush
 		end
 		
@@ -23,11 +44,10 @@ describe Async::Container::Supervisor::Server do
 		
 		# Send a valid register message:
 		message = {id: 1, do: :register, state: {process_id: ::Process.pid}}
-		stream.puts(JSON.dump(message))
-		stream.flush
+		write_message(stream, message)
 		
 		# Read the response:
-		response = JSON.parse(stream.gets, symbolize_names: true)
+		response = read_message(stream)
 		
 		# The server should respond with a finished message:
 		expect(response).to have_keys(
@@ -69,11 +89,10 @@ describe Async::Container::Supervisor::Server do
 			stream = endpoint.connect
 			
 			message = {id: 1, do: :register, state: {process_id: ::Process.pid}}
-			stream.puts(JSON.dump(message))
-			stream.flush
+			write_message(stream, message)
 			
 			# Read the response:
-			response = JSON.parse(stream.gets, symbolize_names: true)
+			response = read_message(stream)
 			
 			# The server should still finish despite the monitor error:
 			expect(response).to have_keys(
@@ -93,11 +112,10 @@ describe Async::Container::Supervisor::Server do
 			stream = endpoint.connect
 			
 			message = {id: 1, do: :status}
-			stream.puts(JSON.dump(message))
-			stream.flush
+			write_message(stream, message)
 			
 			# Read the response:
-			response = JSON.parse(stream.gets, symbolize_names: true)
+			response = read_message(stream)
 			
 			# The server should still respond with a finished message despite the monitor error:
 			expect(response).to have_keys(
@@ -128,10 +146,9 @@ describe Async::Container::Supervisor::Server do
 			# Verify server is still working by sending a new request:
 			stream = endpoint.connect
 			message = {id: 1, do: :status}
-			stream.puts(JSON.dump(message))
-			stream.flush
+			write_message(stream, message)
 			
-			response = JSON.parse(stream.gets, symbolize_names: true)
+			response = read_message(stream)
 			expect(response).to have_keys(
 				id: be == 1,
 				finished: be == true
@@ -152,8 +169,7 @@ describe Async::Container::Supervisor::Server do
 		# Simulate what happens when a timed-out response arrives:
 		# The response only has id and finished (no 'do' key) because it's a response, not a request
 		message = {id: 1, finished: true}
-		stream.puts(JSON.dump(message))
-		stream.flush
+		write_message(stream, message)
 		
 		# Wait for the message to be processed
 		reactor.sleep(0.01)
@@ -164,11 +180,10 @@ describe Async::Container::Supervisor::Server do
 		
 		# Send a valid message to confirm the server is still working:
 		valid_message = {id: 3, do: :register, state: {process_id: ::Process.pid}}
-		stream.puts(JSON.dump(valid_message))
-		stream.flush
+		write_message(stream, valid_message)
 		
 		# Read the response to the valid message:
-		response = JSON.parse(stream.gets, symbolize_names: true)
+		response = read_message(stream)
 		
 		# The server should have ignored the stale response and processed the valid one:
 		expect(response).to have_keys(
@@ -186,17 +201,15 @@ describe Async::Container::Supervisor::Server do
 		
 		# Send a stale response:
 		stale_message = {id: 5, finished: true}
-		stream.puts(JSON.dump(stale_message))
-		stream.flush
+		write_message(stream, stale_message)
 		
 		# Send a valid message:
 		valid_message = {id: 7, do: :register, state: {process_id: ::Process.pid}}
-		stream.puts(JSON.dump(valid_message))
-		stream.flush
+		write_message(stream, valid_message)
 		
 		# We should only get ONE response - for the valid message.
 		# Not an error response for the stale message.
-		response = JSON.parse(stream.gets, symbolize_names: true)
+		response = read_message(stream)
 		
 		expect(response).to have_keys(
 			id: be == 7,

@@ -6,6 +6,7 @@
 require "async/container/supervisor/connection"
 require "sus/fixtures/async/scheduler_context"
 require "stringio"
+require "msgpack"
 
 class TestTarget
 	def initialize(&block)
@@ -20,6 +21,7 @@ end
 describe Async::Container::Supervisor::Connection do
 	let(:stream) {StringIO.new}
 	let(:connection) {Async::Container::Supervisor::Connection.new(stream)}
+	let(:message_wrapper) {Async::Container::Supervisor::MessageWrapper.new}
 	
 	with "dispatch" do
 		it "handles failed writes when dispatching a call" do
@@ -88,16 +90,16 @@ describe Async::Container::Supervisor::Connection do
 			parsed = JSON.parse(json)
 			
 			expect(parsed).to have_keys(
-				"do" => be == "test",
-				"data" => be == "value"
-			)
+					"do" => be == "test",
+					"data" => be == "value"
+				)
 		end
 		
 		it "can get call message via as_json" do
 			expect(test_call.as_json).to have_keys(
-				do: be == :test,
-				data: be == "value"
-			)
+					do: be == :test,
+					data: be == "value"
+				)
 		end
 		
 		it "can iterate over call responses with each" do
@@ -121,11 +123,11 @@ describe Async::Container::Supervisor::Connection do
 			
 			response = test_call.pop
 			expect(response).to have_keys(
-				id: be == 1,
-				finished: be == true,
-				failed: be == true,
-				error: be == "Something went wrong"
-			)
+					id: be == 1,
+					finished: be == true,
+					failed: be == true,
+					error: be == "Something went wrong"
+				)
 			
 			expect(test_call.closed?).to be == true
 		end
@@ -144,30 +146,43 @@ describe Async::Container::Supervisor::Connection do
 		end
 	end
 	
-	it "writes JSON with newline" do
+	it "writes length-prefixed MessagePack data" do
 		connection.write(id: 1, do: :test)
 		
 		stream.rewind
-		output = stream.read
 		
-		# Check it's valid JSON with a newline
-		expect(output[-1]).to be == "\n"
+		# Read 2-byte length prefix
+		length_data = stream.read(4)
+		expect(length_data.bytesize).to be == 4
 		
-		parsed = JSON.parse(output.chomp)
+		length = length_data.unpack1("N")
+		expect(length).to be > 0
+		
+		# Read MessagePack data
+		data = stream.read(length)
+		expect(data.bytesize).to be == length
+		
+		# Parse MessagePack
+		parsed = message_wrapper.unpack(data)
 		expect(parsed).to have_keys(
-			"id" => be == 1,
-			"do" => be == "test"
+			id: be == 1,
+			do: be == :test
 		)
 	end
 	
-	it "parses JSON lines" do
-		stream.string = JSON.dump({id: 1, do: "test"}) << "\n"
+	it "reads length-prefixed MessagePack data" do
+		# Create MessagePack data
+		message = {id: 1, do: "test"}
+		data = message_wrapper.pack(message)
+		
+		# Write with length prefix
+		stream.string = [data.bytesize].pack("N") + data
 		stream.rewind
 		
-		message = connection.read
+		parsed = connection.read
 		
-		# Connection.read uses symbolize_names: true (keys are symbols, values are as-is)
-		expect(message).to have_keys(
+		# Keys are symbols
+		expect(parsed).to have_keys(
 			id: be == 1,
 			do: be == "test"
 		)

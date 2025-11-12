@@ -5,6 +5,7 @@
 
 require "json"
 require "async"
+require_relative "message_wrapper"
 
 module Async
 	module Container
@@ -13,6 +14,8 @@ module Async
 			#
 			# Handles message passing, call/response patterns, and connection lifecycle.
 			class Connection
+				MAX_MESSAGE_SIZE = 2 ** 32 - 1
+				
 				# Represents a remote procedure call over a connection.
 				#
 				# Manages the call lifecycle, response queueing, and completion signaling.
@@ -231,7 +234,7 @@ module Async
 					@stream = stream
 					@id = id
 					@state = state
-					
+					@message_wrapper = MessageWrapper.new
 					@reader = nil
 					@calls = {}
 				end
@@ -251,9 +254,15 @@ module Async
 				
 				# Write a message to the connection stream.
 				#
+				# Uses a length-prefixed protocol: 2-byte length header (big-endian) followed by data.
+				# This allows MessagePack data to contain newlines without breaking message boundaries.
+				#
 				# @parameter message [Hash] The message to write.
 				def write(**message)
-					@stream.write(JSON.dump(message) << "\n")
+					data = @message_wrapper.pack(message)
+					# Write 4-byte length prefix
+					data_length = [data.bytesize].pack("N")
+					@stream.write(data_length + data)
 					@stream.flush
 				end
 				
@@ -261,9 +270,26 @@ module Async
 				#
 				# @returns [Hash, nil] The parsed message or nil if stream is closed.
 				def read
-					if line = @stream&.gets
-						JSON.parse(line, symbolize_names: true)
+					length_data = @stream&.read(4)
+					return nil unless length_data && length_data.bytesize == 4
+					
+					# Unpack 32-bit integer
+					length = length_data.unpack1("N")
+					
+					# Validate message size
+					if length > MAX_MESSAGE_SIZE
+						Console.error(self, "Message too large: #{length} bytes (max: #{MAX_MESSAGE_SIZE})")
+						return nil
 					end
+					
+					# Read the exact amount of data specified
+					data = @stream.read(length)
+					
+					unless data && data.bytesize == length
+						raise EOFError, "Failed to read complete message"
+					end
+					
+					@message_wrapper.unpack(data)
 				end
 				
 				# Iterate over all messages from the connection.

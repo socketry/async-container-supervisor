@@ -33,7 +33,7 @@ class SleepService < Async::Service::Generic
 				Console.info(self, "Exiting...")
 			end
 		end
-	end	
+	end
 end
 
 service "sleep" do

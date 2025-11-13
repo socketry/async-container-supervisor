@@ -3,7 +3,6 @@
 # Released under the MIT License.
 # Copyright, 2025, by Samuel Williams.
 
-require "json"
 require "async"
 require_relative "message_wrapper"
 
@@ -14,8 +13,6 @@ module Async
 			#
 			# Handles message passing, call/response patterns, and connection lifecycle.
 			class Connection
-				MAX_MESSAGE_SIZE = 2 ** 32 - 1
-				
 				# Represents a remote procedure call over a connection.
 				#
 				# Manages the call lifecycle, response queueing, and completion signaling.
@@ -38,13 +35,6 @@ module Async
 					# @returns [Hash] The message hash.
 					def as_json(...)
 						@message
-					end
-					
-					# Convert the call to a JSON string.
-					#
-					# @returns [String] The JSON representation.
-					def to_json(...)
-						as_json.to_json(...)
 					end
 					
 					# @attribute [Connection] The connection that initiated the call.

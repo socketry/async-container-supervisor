@@ -20,14 +20,11 @@ module Async
 				
 				def write(message)
 					data = pack(message)
-					# Console.logger.info("Sending data: #{message.inspect}")
 					@packer.write(data)
 				end
 				
 				def read
-					data = @unpacker.read
-					# Console.logger.info("Received data: #{data.inspect}")
-					data
+					@unpacker.read
 				end
 				
 				def pack(message)

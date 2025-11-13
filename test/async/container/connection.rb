@@ -88,16 +88,6 @@ describe Async::Container::Supervisor::Connection do
 	with subject::Call do
 		let(:test_call) {Async::Container::Supervisor::Connection::Call.new(connection, 1, {do: :test, data: "value"})}
 		
-		it "can serialize call to JSON" do
-			json = test_call.to_json
-			parsed = JSON.parse(json)
-			
-			expect(parsed).to have_keys(
-					"do" => be == "test",
-					"data" => be == "value"
-				)
-		end
-		
 		it "can get call message via as_json" do
 			expect(test_call.as_json).to have_keys(
 					do: be == :test,

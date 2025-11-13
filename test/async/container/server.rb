@@ -10,25 +10,12 @@ describe Async::Container::Supervisor::Server do
 	include Async::Container::Supervisor::AServer
 	include Sus::Fixtures::Console::CapturedLogger
 	
-	let(:message_wrapper) {Async::Container::Supervisor::MessageWrapper.new}
-	
-	# Helper to write length-prefixed MessagePack data
 	def write_message(stream, message)
-		data = message_wrapper.pack(message)
-		stream.write([data.bytesize].pack("N") + data)
-		stream.flush
+		Async::Container::Supervisor::MessageWrapper.new(stream).write(message)
 	end
 	
-	# Helper to read length-prefixed MessagePack data
 	def read_message(stream)
-		length_data = stream.read(4)
-		return nil unless length_data && length_data.bytesize == 4
-		
-		length = length_data.unpack1("N")
-		data = stream.read(length)
-		return nil unless data && data.bytesize == length
-		
-		message_wrapper.unpack(data)
+		Async::Container::Supervisor::MessageWrapper.new(stream).read
 	end
 	
 	it "can handle unexpected failures" do

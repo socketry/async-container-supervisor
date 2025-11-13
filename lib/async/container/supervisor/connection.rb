@@ -234,7 +234,7 @@ module Async
 					@stream = stream
 					@id = id
 					@state = state
-					@message_wrapper = MessageWrapper.new
+					@message_wrapper = MessageWrapper.new(@stream)
 					@reader = nil
 					@calls = {}
 				end
@@ -259,37 +259,16 @@ module Async
 				#
 				# @parameter message [Hash] The message to write.
 				def write(**message)
-					data = @message_wrapper.pack(message)
-					# Write 4-byte length prefix
-					data_length = [data.bytesize].pack("N")
-					@stream.write(data_length + data)
-					@stream.flush
+					@message_wrapper.write(message)
 				end
 				
 				# Read a message from the connection stream.
 				#
 				# @returns [Hash, nil] The parsed message or nil if stream is closed.
 				def read
-					length_data = @stream&.read(4)
-					return nil unless length_data && length_data.bytesize == 4
-					
-					# Unpack 32-bit integer
-					length = length_data.unpack1("N")
-					
-					# Validate message size
-					if length > MAX_MESSAGE_SIZE
-						Console.error(self, "Message too large: #{length} bytes (max: #{MAX_MESSAGE_SIZE})")
-						return nil
-					end
-					
-					# Read the exact amount of data specified
-					data = @stream.read(length)
-					
-					unless data && data.bytesize == length
-						raise EOFError, "Failed to read complete message"
-					end
-					
-					@message_wrapper.unpack(data)
+					@message_wrapper.read
+				rescue EOFError, IOError
+					nil
 				end
 				
 				# Iterate over all messages from the connection.

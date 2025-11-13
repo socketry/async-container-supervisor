@@ -21,12 +21,16 @@ end
 describe Async::Container::Supervisor::Connection do
 	let(:stream) {StringIO.new}
 	let(:connection) {Async::Container::Supervisor::Connection.new(stream)}
-	let(:message_wrapper) {Async::Container::Supervisor::MessageWrapper.new}
+	let(:message_wrapper) {Async::Container::Supervisor::MessageWrapper.new(stream)}
+	
+	def write_message(message)
+		message_wrapper.write(message)
+		stream.rewind
+	end
 	
 	with "dispatch" do
 		it "handles failed writes when dispatching a call" do
-			stream.write(JSON.dump({id: 1, do: :test}) << "\n")
-			stream.rewind
+			write_message({id: 1, do: :test})
 			
 			expect(stream).to receive(:write).and_raise(IOError, "Write error")
 			
@@ -44,8 +48,7 @@ describe Async::Container::Supervisor::Connection do
 		end
 		
 		it "closes the queue when the connection fails" do
-			stream.write(JSON.dump({id: 1, do: :test}) << "\n")
-			stream.rewind
+			write_message({id: 1, do: :test})
 			
 			expect(stream).to receive(:write).and_raise(IOError, "Write error")
 			
@@ -144,48 +147,6 @@ describe Async::Container::Supervisor::Connection do
 			
 			expect(test_call.closed?).to be == true
 		end
-	end
-	
-	it "writes length-prefixed MessagePack data" do
-		connection.write(id: 1, do: :test)
-		
-		stream.rewind
-		
-		# Read 2-byte length prefix
-		length_data = stream.read(4)
-		expect(length_data.bytesize).to be == 4
-		
-		length = length_data.unpack1("N")
-		expect(length).to be > 0
-		
-		# Read MessagePack data
-		data = stream.read(length)
-		expect(data.bytesize).to be == length
-		
-		# Parse MessagePack
-		parsed = message_wrapper.unpack(data)
-		expect(parsed).to have_keys(
-			id: be == 1,
-			do: be == :test
-		)
-	end
-	
-	it "reads length-prefixed MessagePack data" do
-		# Create MessagePack data
-		message = {id: 1, do: "test"}
-		data = message_wrapper.pack(message)
-		
-		# Write with length prefix
-		stream.string = [data.bytesize].pack("N") + data
-		stream.rewind
-		
-		parsed = connection.read
-		
-		# Keys are symbols
-		expect(parsed).to have_keys(
-			id: be == 1,
-			do: be == "test"
-		)
 	end
 	
 	it "returns nil when stream is closed" do

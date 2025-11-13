@@ -9,12 +9,25 @@ module Async
 	module Container
 		module Supervisor
 			class MessageWrapper
-				def initialize
+				def initialize(stream)
 					@factory = MessagePack::Factory.new
 					
 					register_types
 					
-					@packer = @factory.packer
+					@packer = @factory.packer(stream)
+					@unpacker = @factory.unpacker(stream)
+				end
+				
+				def write(message)
+					data = pack(message)
+					# Console.logger.info("Sending data: #{message.inspect}")
+					@packer.write(data)
+				end
+				
+				def read
+					data = @unpacker.read
+					# Console.logger.info("Received data: #{data.inspect}")
+					data
 				end
 				
 				def pack(message)

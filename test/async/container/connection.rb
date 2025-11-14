@@ -6,7 +6,6 @@
 require "async/container/supervisor/connection"
 require "sus/fixtures/async/scheduler_context"
 require "stringio"
-require "msgpack"
 
 class TestTarget
 	def initialize(&block)

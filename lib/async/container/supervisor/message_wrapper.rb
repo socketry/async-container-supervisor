@@ -47,7 +47,7 @@ module Async
 					when Array
 						obj.map{|v| normalize(v)}
 					else
-						if obj.respond_to?(:as_json)
+						if obj.respond_to?(:as_json) && (as_json = obj.as_json) && as_json != obj
 							normalize(obj.as_json)
 						else
 							obj

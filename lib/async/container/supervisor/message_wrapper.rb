@@ -81,12 +81,13 @@ module Async
 					)
 				end
 				
-				def pack_exception(exception)
-					[exception.class.name, exception.message, exception.backtrace].pack("A*")
+				def pack_exception(exception, packer)
+					message = [exception.class.name, exception.message, exception.backtrace]
+					packer.write(message)
 				end
 				
-				def unpack_exception(data)
-					klass, message, backtrace = data.unpack("A*A*A*")
+				def unpack_exception(unpacker)
+					klass, message, backtrace = unpacker.read
 					klass = Object.const_get(klass)
 					
 					exception = klass.new(message)

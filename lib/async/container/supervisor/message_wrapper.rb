@@ -4,6 +4,7 @@
 # Copyright, 2025, by Samuel Williams.
 
 require "msgpack"
+require "set"
 
 module Async
 	module Container
@@ -29,7 +30,7 @@ module Async
 				
 				def pack(message)
 					@packer.clear
-					normalized_message = normalize(message)
+					normalized_message = normalize(message, Set.new)
 					@packer.pack(normalized_message)
 					@packer.full_pack
 				end
@@ -40,15 +41,27 @@ module Async
 				
 				private
 				
-				def normalize(obj)
+				def normalize(obj, visited = Set.new.compare_by_identity)
+					# Check for circular references
+					return "..." if visited.include?(obj)
+					
 					case obj
 					when Hash
-						obj.transform_values{|v| normalize(v)}
+						visited.add(obj)
+						result = obj.transform_values{|v| normalize(v, visited)}
+						visited.delete(obj)
+						result
 					when Array
-						obj.map{|v| normalize(v)}
+						visited.add(obj)
+						result = obj.map{|v| normalize(v, visited)}
+						visited.delete(obj)
+						result
 					else
 						if obj.respond_to?(:as_json) && (as_json = obj.as_json) && as_json != obj
-							normalize(obj.as_json)
+							visited.add(obj)
+							result = normalize(as_json, visited)
+							visited.delete(obj)
+							result
 						else
 							obj
 						end

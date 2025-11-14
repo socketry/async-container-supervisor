@@ -41,6 +41,16 @@ describe Async::Container::Supervisor::MessageWrapper do
 			Integer.send(:remove_method, :as_json)
 		end
 		
+		it "normalizes circular references" do
+			array = []
+			array << array
+			
+			write_message({data: array})
+			
+			result = read_message
+			expect(result[:data]).to be == ["..."]
+		end
+		
 		it "handles simple strings" do
 			write_message({message: "hello world"})
 			

@@ -44,7 +44,7 @@ def memory_sample(duration: 10, connection_id:)
 		operation = {do: :memory_sample, duration: duration}
 		
 		# Use the forward operation to proxy the request to a worker:
-		return connection.call(do: :forward, operation: operation, connection_id: connection_id)
+		connection.call(do: :forward, operation: operation, connection_id: connection_id)
 	end
 end
 

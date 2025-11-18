@@ -32,5 +32,30 @@ describe Async::Container::Supervisor::Client do
 			
 			client_task.stop
 		end
+		
+		it "does not leak fibers when connected! creates tasks and reconnection occurs" do
+			state = Thread::Queue.new
+			
+			mock(client) do |mock|
+				mock.replace(:connected!) do
+					state << :connected
+					
+					Async do
+						sleep
+					ensure
+						state << :disconnected
+					end
+				end
+			end
+			
+			client_task = client.run
+			expect(state.pop).to be == :connected
+			
+			# Interrupt the supervisor:
+			restart_supervisor
+			
+			expect(state.pop).to be == :disconnected
+			expect(state.pop).to be == :connected
+		end
 	end
 end

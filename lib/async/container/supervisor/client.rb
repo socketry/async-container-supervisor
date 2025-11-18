@@ -48,11 +48,11 @@ module Async
 				
 				# Run the client in a loop, reconnecting if necessary.
 				def run
-					Async(annotation: "Supervisor Client", transient: true) do
+					Async(annotation: "Supervisor Client", transient: true) do |task|
 						loop do
 							connection = connect!
 							
-							Async do
+							connected_task = task.async do
 								connected!(connection)
 							end
 							
@@ -61,6 +61,10 @@ module Async
 							Console.error(self, "Connection failed:", exception: error)
 							sleep(rand)
 						ensure
+							# Ensure any tasks that were created during connection are stopped:
+							connected_task&.stop
+							
+							# Close the connection itself:
 							connection&.close
 						end
 					end

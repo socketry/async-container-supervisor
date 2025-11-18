@@ -58,6 +58,14 @@ module Async
 				let(:monitors) {[registration_monitor]}
 				let(:server) {Async::Container::Supervisor::Server.new(endpoint: @bound_endpoint, monitors: monitors)}
 				
+				def restart_supervisor
+					@server_task&.stop
+					
+					@server_task = reactor.async do
+						server.run
+					end
+				end
+				
 				before do
 					@bound_endpoint = endpoint.bound
 					

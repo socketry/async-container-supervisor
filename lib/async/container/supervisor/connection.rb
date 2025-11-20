@@ -244,9 +244,6 @@ module Async
 				
 				# Write a message to the connection stream.
 				#
-				# Uses a length-prefixed protocol: 2-byte length header (big-endian) followed by data.
-				# This allows MessagePack data to contain newlines without breaking message boundaries.
-				#
 				# @parameter message [Hash] The message to write.
 				def write(**message)
 					@message_wrapper.write(message)

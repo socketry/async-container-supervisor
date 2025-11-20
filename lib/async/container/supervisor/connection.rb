@@ -3,8 +3,8 @@
 # Released under the MIT License.
 # Copyright, 2025, by Samuel Williams.
 
-require "json"
 require "async"
+require_relative "message_wrapper"
 
 module Async
 	module Container
@@ -35,13 +35,6 @@ module Async
 					# @returns [Hash] The message hash.
 					def as_json(...)
 						@message
-					end
-					
-					# Convert the call to a JSON string.
-					#
-					# @returns [String] The JSON representation.
-					def to_json(...)
-						as_json.to_json(...)
 					end
 					
 					# @attribute [Connection] The connection that initiated the call.
@@ -231,7 +224,7 @@ module Async
 					@stream = stream
 					@id = id
 					@state = state
-					
+					@message_wrapper = MessageWrapper.new(@stream)
 					@reader = nil
 					@calls = {}
 				end
@@ -253,17 +246,16 @@ module Async
 				#
 				# @parameter message [Hash] The message to write.
 				def write(**message)
-					@stream.write(JSON.dump(message) << "\n")
-					@stream.flush
+					@message_wrapper.write(message)
 				end
 				
 				# Read a message from the connection stream.
 				#
 				# @returns [Hash, nil] The parsed message or nil if stream is closed.
 				def read
-					if line = @stream&.gets
-						JSON.parse(line, symbolize_names: true)
-					end
+					@message_wrapper.read
+				rescue EOFError, IOError
+					nil
 				end
 				
 				# Iterate over all messages from the connection.

@@ -20,11 +20,16 @@ end
 describe Async::Container::Supervisor::Connection do
 	let(:stream) {StringIO.new}
 	let(:connection) {Async::Container::Supervisor::Connection.new(stream)}
+	let(:message_wrapper) {Async::Container::Supervisor::MessageWrapper.new(stream)}
+	
+	def write_message(message)
+		message_wrapper.write(message)
+		stream.rewind
+	end
 	
 	with "dispatch" do
 		it "handles failed writes when dispatching a call" do
-			stream.write(JSON.dump({id: 1, do: :test}) << "\n")
-			stream.rewind
+			write_message({id: 1, do: :test})
 			
 			expect(stream).to receive(:write).and_raise(IOError, "Write error")
 			
@@ -42,8 +47,7 @@ describe Async::Container::Supervisor::Connection do
 		end
 		
 		it "closes the queue when the connection fails" do
-			stream.write(JSON.dump({id: 1, do: :test}) << "\n")
-			stream.rewind
+			write_message({id: 1, do: :test})
 			
 			expect(stream).to receive(:write).and_raise(IOError, "Write error")
 			
@@ -83,21 +87,11 @@ describe Async::Container::Supervisor::Connection do
 	with subject::Call do
 		let(:test_call) {Async::Container::Supervisor::Connection::Call.new(connection, 1, {do: :test, data: "value"})}
 		
-		it "can serialize call to JSON" do
-			json = test_call.to_json
-			parsed = JSON.parse(json)
-			
-			expect(parsed).to have_keys(
-				"do" => be == "test",
-				"data" => be == "value"
-			)
-		end
-		
 		it "can get call message via as_json" do
 			expect(test_call.as_json).to have_keys(
-				do: be == :test,
-				data: be == "value"
-			)
+					do: be == :test,
+					data: be == "value"
+				)
 		end
 		
 		it "can iterate over call responses with each" do
@@ -121,11 +115,11 @@ describe Async::Container::Supervisor::Connection do
 			
 			response = test_call.pop
 			expect(response).to have_keys(
-				id: be == 1,
-				finished: be == true,
-				failed: be == true,
-				error: be == "Something went wrong"
-			)
+					id: be == 1,
+					finished: be == true,
+					failed: be == true,
+					error: be == "Something went wrong"
+				)
 			
 			expect(test_call.closed?).to be == true
 		end
@@ -142,35 +136,6 @@ describe Async::Container::Supervisor::Connection do
 			
 			expect(test_call.closed?).to be == true
 		end
-	end
-	
-	it "writes JSON with newline" do
-		connection.write(id: 1, do: :test)
-		
-		stream.rewind
-		output = stream.read
-		
-		# Check it's valid JSON with a newline
-		expect(output[-1]).to be == "\n"
-		
-		parsed = JSON.parse(output.chomp)
-		expect(parsed).to have_keys(
-			"id" => be == 1,
-			"do" => be == "test"
-		)
-	end
-	
-	it "parses JSON lines" do
-		stream.string = JSON.dump({id: 1, do: "test"}) << "\n"
-		stream.rewind
-		
-		message = connection.read
-		
-		# Connection.read uses symbolize_names: true (keys are symbols, values are as-is)
-		expect(message).to have_keys(
-			id: be == 1,
-			do: be == "test"
-		)
 	end
 	
 	it "returns nil when stream is closed" do

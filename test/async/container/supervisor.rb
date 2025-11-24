@@ -117,6 +117,10 @@ describe Async::Container::Supervisor do
 			
 			# The result should contain a report
 			expect(result).to have_keys(:data)
+			
+			report = JSON.parse(result[:data], symbolize_names: true)
+			
+			expect(report).to have_keys(:total_allocated, :total_retained, :aggregates)
 		ensure
 			worker_task&.stop
 		end

@@ -253,8 +253,8 @@ module Async
 				#
 				# @parameter message [Hash] The message to write.
 				def write(**message)
-					@stream.write(JSON.dump(message) << "\n")
-					@stream.flush
+					@stream&.write(JSON.dump(message) << "\n")
+					@stream&.flush
 				end
 				
 				# Read a message from the connection stream.
@@ -327,9 +327,9 @@ module Async
 						@reader = nil
 					end
 					
-					if stream = @stream
+					if @stream
+						@stream.close
 						@stream = nil
-						stream.close
 					end
 					
 					if @calls

@@ -117,7 +117,7 @@ module Async
 					report = sampler.report
 					
 					dump(call) do |file|
-						file.puts(report.to_s)
+						file.puts(report.to_json)
 					end
 				ensure
 					GC.start

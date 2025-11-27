@@ -44,12 +44,12 @@ def memory_sample(duration: 10, connection_id:)
 		operation = {do: :memory_sample, duration: duration}
 		
 		# Use the forward operation to proxy the request to a worker:
-		data = connection.call(do: :forward, operation: operation, connection_id: connection_id)
+		response = connection.call(do: :forward, operation: operation, connection_id: connection_id)
 		
-		if data && data.key?(:data)
-			JSON.parse(data[:data], symbolize_names: true)
+		if response && response.key?(:data)
+			JSON.parse(response[:data], symbolize_names: true)
 		else
-			data
+			response
 		end
 	end
 end

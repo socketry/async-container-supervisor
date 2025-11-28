@@ -253,8 +253,9 @@ module Async
 				#
 				# @parameter message [Hash] The message to write.
 				def write(**message)
+					raise IOError, "Connection is closed!" unless @stream
 					@stream&.write(JSON.dump(message) << "\n")
-					@stream&.flush
+					@stream&.flush # it is possible for @stream to become nil after the write call
 				end
 				
 				# Read a message from the connection stream.
@@ -327,9 +328,9 @@ module Async
 						@reader = nil
 					end
 					
-					if @stream
-						@stream.close
+					if stream = @stream
 						@stream = nil
+						stream.close
 					end
 					
 					if @calls

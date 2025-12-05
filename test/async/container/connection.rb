@@ -17,6 +17,13 @@ class TestTarget
 	end
 end
 
+class SlowWriteStringIO < StringIO
+	def write(data)
+		super(data)
+		sleep(1) # Simulate a slow write
+	end
+end
+
 describe Async::Container::Supervisor::Connection do
 	let(:stream) {StringIO.new}
 	let(:connection) {Async::Container::Supervisor::Connection.new(stream)}
@@ -207,6 +214,20 @@ describe Async::Container::Supervisor::Connection do
 		it "closes the stream" do
 			connection.close
 			expect(stream).to be(:closed?)
+		end
+		
+		it "closes while writing" do
+			slow_connection = Async::Container::Supervisor::Connection.new(SlowWriteStringIO.new)
+			
+			Async do
+				Async do |task|
+					slow_connection.write(id: 1, do: :test)
+				end
+				
+				Async do |task|
+					slow_connection.close
+				end
+			end
 		end
 	end
 end

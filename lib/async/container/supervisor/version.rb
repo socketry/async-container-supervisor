@@ -9,7 +9,7 @@ module Async
 	module Container
 		# @namespace
 		module Supervisor
-			VERSION = "0.9.1"
+			VERSION = "0.9.2"
 		end
 	end
 end

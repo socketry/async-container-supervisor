@@ -30,6 +30,9 @@ module Async
 					@options = options
 					
 					@processes = Hash.new{|hash, key| hash[key] = Set.new.compare_by_identity}
+					
+					# Queue to serialize cluster modifications to prevent race conditions:
+					@guard = Mutex.new
 				end
 				
 				# @attribute [Memory::Leak::Cluster] The cluster of processes being monitored.
@@ -50,7 +53,10 @@ module Async
 						
 						if connections.empty?
 							Console.debug(self, "Registering process.", child: {process_id: process_id})
-							self.add(process_id)
+							# Queue the cluster modification to avoid race conditions:
+							@guard.synchronize do
+								self.add(process_id)
+							end
 						end
 						
 						connections.add(connection)
@@ -66,7 +72,9 @@ module Async
 						
 						if connections.empty?
 							Console.debug(self, "Removing process.", child: {process_id: process_id})
-							@cluster.remove(process_id)
+							@guard.synchronize do
+								@cluster.remove(process_id)
+							end
 						end
 					end
 				end
@@ -119,14 +127,16 @@ module Async
 				def run
 					Async do
 						Loop.run(interval: @interval) do
-							# This block must return true if the process was killed.
-							@cluster.check! do |process_id, monitor|
-								Console.error(self, "Memory leak detected!", child: {process_id: process_id}, monitor: monitor)
-								
-								begin
-									memory_leak_detected(process_id, monitor)
-								rescue => error
-									Console.error(self, "Failed to handle memory leak!", child: {process_id: process_id}, exception: error)
+							@guard.synchronize do
+								# This block must return true if the process was killed.
+								@cluster.check! do |process_id, monitor|
+									Console.error(self, "Memory leak detected!", child: {process_id: process_id}, monitor: monitor)
+									
+									begin
+										memory_leak_detected(process_id, monitor)
+									rescue => error
+										Console.error(self, "Failed to handle memory leak!", child: {process_id: process_id}, exception: error)
+									end
 								end
 							end
 						end

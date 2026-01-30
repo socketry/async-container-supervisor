@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.9.3
 
   - Serialize `register`/`remove` and `check!` operations in `MemoryMonitor`.
 

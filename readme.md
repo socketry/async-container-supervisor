@@ -26,6 +26,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container-supervisor/releases/index) for all releases.
 
+### v0.10.0
+
+  - Add support for `Memory::Leak::Cluster` `free_size_minimum:`.
+
 ### v0.9.3
 
   - Serialize `register`/`remove` and `check!` operations in `MemoryMonitor`.
@@ -65,10 +69,6 @@ Please see the [project releases](https://socketry.github.io/async-container-sup
 ### v0.6.0
 
   - Add `async:container:supervisor:reload` command to restart the container (blue/green deployment).
-
-### v0.1.0
-
-  - Initial implementation.
 
 ## Contributing
 

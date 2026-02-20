@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.10.0
 
   - Add support for `Memory::Leak::Cluster` `free_size_minimum:`.
 

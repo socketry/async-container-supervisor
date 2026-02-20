@@ -92,7 +92,7 @@ module Async
 				# @parameter monitor [Memory::Leak::Monitor] The monitor that detected the memory leak.
 				# @returns [Boolean] True if the process was killed.
 				def memory_leak_detected(process_id, monitor)
-					Console.info(self, "Memory leak detected!", child: {process_id: process_id}, monitor: monitor)
+					Console.warn(self, "Memory leak detected!", child: {process_id: process_id}, monitor: monitor)
 					
 					if @memory_sample
 						Console.info(self, "Capturing memory sample...", child: {process_id: process_id}, memory_sample: @memory_sample)
@@ -130,8 +130,6 @@ module Async
 							@guard.synchronize do
 								# This block must return true if the process was killed.
 								@cluster.check! do |process_id, monitor|
-									Console.error(self, "Memory leak detected!", child: {process_id: process_id}, monitor: monitor)
-									
 									begin
 										memory_leak_detected(process_id, monitor)
 									rescue => error

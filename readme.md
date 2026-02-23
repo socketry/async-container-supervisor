@@ -26,6 +26,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container-supervisor/releases/index) for all releases.
 
+### v0.10.1
+
+  - Remove extraneous "Memory leak detected\!" logs.
+
 ### v0.10.0
 
   - Add support for `Memory::Leak::Cluster` `free_size_minimum:`.
@@ -65,10 +69,6 @@ Please see the [project releases](https://socketry.github.io/async-container-sup
 ### v0.6.2
 
   - Fix timed out RPCs and subsequent responses which should be ignored.
-
-### v0.6.0
-
-  - Add `async:container:supervisor:reload` command to restart the container (blue/green deployment).
 
 ## Contributing
 

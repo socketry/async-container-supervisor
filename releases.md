@@ -1,8 +1,8 @@
 # Releases
 
-## Unreleased
+## v0.10.1
 
-  - Remove extraneous "Memory leak detected!" logs.
+  - Remove extraneous "Memory leak detected\!" logs.
 
 ## v0.10.0
 

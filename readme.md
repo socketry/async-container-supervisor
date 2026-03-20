@@ -1,6 +1,9 @@
 # Async::Container::Supervisor
 
-Provides a supervisor service for
+> [!WARNING]
+> This gem has been replaced by <https://github.com/socketry/async-service-supervisor>.
+
+Provides a supervisor service for `async-containers`.
 
 [![Development Status](https://github.com/socketry/async-container-supervisor/workflows/Test/badge.svg)](https://github.com/socketry/async-container-supervisor/actions?workflow=Test)
 
